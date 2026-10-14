@@ -22,3 +22,11 @@ type CollisionSubGroupID uint32
 
 // CharacterID identifies a character.
 type CharacterID uint32
+
+// Constants mirroring joltc macros.
+const (
+	// MaxPhysicsJobs mirrors JPH_MAX_PHYSICS_JOBS.
+	MaxPhysicsJobs uint32 = 2048
+	// MaxPhysicsBarriers mirrors JPH_MAX_PHYSICS_BARRIERS.
+	MaxPhysicsBarriers uint32 = 8
+)

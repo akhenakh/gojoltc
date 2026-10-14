@@ -52,7 +52,8 @@ test-double: native-double
 	$(GO) test $(GOFLAGS) -tags jolt_double ./...
 
 build-nocgo:
-	CGO_ENABLED=0 $(GO) build ./...
+	@pkgs="$$($(GO) list ./... | grep -v '/examples/')"; \
+	CGO_ENABLED=0 $(GO) build $$pkgs
 
 examples: native
 	$(GO) build ./examples/...
