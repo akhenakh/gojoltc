@@ -165,6 +165,63 @@ type BroadPhaseQuery struct{}
 // NarrowPhaseQuery is a narrow-phase collision query interface.
 type NarrowPhaseQuery struct{}
 
+// Constraint is a physics joint between bodies.
+type Constraint struct{}
+
+// FixedConstraintSettings holds settings for a fixed constraint.
+type FixedConstraintSettings struct{}
+
+// DistanceConstraintSettings holds settings for a distance constraint.
+type DistanceConstraintSettings struct{}
+
+// PointConstraintSettings holds settings for a point constraint.
+type PointConstraintSettings struct{}
+
+// HingeConstraintSettings holds settings for a hinge constraint.
+type HingeConstraintSettings struct{}
+
+// SliderConstraintSettings holds settings for a slider constraint.
+type SliderConstraintSettings struct{}
+
+// ConeConstraintSettings holds settings for a cone constraint.
+type ConeConstraintSettings struct{}
+
+// SwingTwistConstraintSettings holds settings for a swing-twist constraint.
+type SwingTwistConstraintSettings struct{}
+
+// SixDOFConstraintSettings holds settings for a six DOF constraint.
+type SixDOFConstraintSettings struct{}
+
+// GearConstraintSettings holds settings for a gear constraint.
+type GearConstraintSettings struct{}
+
+// NewFixedConstraintSettings returns nil in a cgo-less build.
+func NewFixedConstraintSettings() *FixedConstraintSettings { return nil }
+
+// NewDistanceConstraintSettings returns nil in a cgo-less build.
+func NewDistanceConstraintSettings() *DistanceConstraintSettings { return nil }
+
+// NewPointConstraintSettings returns nil in a cgo-less build.
+func NewPointConstraintSettings() *PointConstraintSettings { return nil }
+
+// NewHingeConstraintSettings returns nil in a cgo-less build.
+func NewHingeConstraintSettings() *HingeConstraintSettings { return nil }
+
+// NewSliderConstraintSettings returns nil in a cgo-less build.
+func NewSliderConstraintSettings() *SliderConstraintSettings { return nil }
+
+// NewConeConstraintSettings returns nil in a cgo-less build.
+func NewConeConstraintSettings() *ConeConstraintSettings { return nil }
+
+// NewSwingTwistConstraintSettings returns nil in a cgo-less build.
+func NewSwingTwistConstraintSettings() *SwingTwistConstraintSettings { return nil }
+
+// NewSixDOFConstraintSettings returns nil in a cgo-less build.
+func NewSixDOFConstraintSettings() *SixDOFConstraintSettings { return nil }
+
+// NewGearConstraintSettings returns nil in a cgo-less build.
+func NewGearConstraintSettings() *GearConstraintSettings { return nil }
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 
