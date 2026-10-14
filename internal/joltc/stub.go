@@ -405,6 +405,22 @@ func NewHeightFieldShapeSettings(samples []float32, offset, scale vecmath.Vec3) 
 	return nil
 }
 
+// GroupFilter decides whether two collision groups may collide.
+type GroupFilter struct{}
+
+// NewGroupFilterTable returns nil in a cgo-less build.
+func NewGroupFilterTable(numSubGroups uint32) *GroupFilter { return nil }
+
+// NewPlaneShapeWithMaterial returns nil in a cgo-less build.
+func NewPlaneShapeWithMaterial(plane vecmath.Plane, material *PhysicsMaterial, halfExtent float32) *Shape {
+	return nil
+}
+
+// NewTaperedCylinderShapeSettingsWithMaterial returns nil in a cgo-less build.
+func NewTaperedCylinderShapeSettingsWithMaterial(halfHeightOfTaperedCylinder, topRadius, bottomRadius, convexRadius float32, material *PhysicsMaterial) *TaperedCylinderShapeSettings {
+	return nil
+}
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 
