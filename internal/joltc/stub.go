@@ -325,6 +325,53 @@ func NewVehicleTransmissionSettings() *VehicleTransmissionSettings { return nil 
 // NewWheeledVehicleControllerSettings returns nil in a cgo-less build.
 func NewWheeledVehicleControllerSettings() *WheeledVehicleControllerSettings { return nil }
 
+// ContactManifold describes a contact between two bodies.
+type ContactManifold struct{}
+
+// ContactSettings lets a contact callback tweak the contact.
+type ContactSettings struct{}
+
+// ContactListener receives contact events from the physics system.
+type ContactListener struct{}
+
+// BodyActivationListener receives body activation events.
+type BodyActivationListener struct{}
+
+// StepListener receives a callback for each simulation step.
+type StepListener struct{}
+
+// DebugRenderer turns Jolt's debug draw calls into Go callbacks.
+type DebugRenderer struct{}
+
+// NewContactListener returns nil in a cgo-less build.
+func NewContactListener(cb *ContactListenerCallbacks) *ContactListener { return nil }
+
+// NewBodyActivationListener returns nil in a cgo-less build.
+func NewBodyActivationListener(cb *BodyActivationCallbacks) *BodyActivationListener { return nil }
+
+// NewStepListener returns nil in a cgo-less build.
+func NewStepListener(cb *StepListenerCallbacks) *StepListener { return nil }
+
+// NewDebugRenderer returns nil in a cgo-less build.
+func NewDebugRenderer(cb *DebugRendererCallbacks) *DebugRenderer { return nil }
+
+// SoftBodySharedSettings describes a soft body mesh.
+type SoftBodySharedSettings struct{}
+
+// SoftBodyCreationSettings describes a soft body to be created.
+type SoftBodyCreationSettings struct{}
+
+// NewSoftBodySharedSettings returns nil in a cgo-less build.
+func NewSoftBodySharedSettings() *SoftBodySharedSettings { return nil }
+
+// NewSoftBodyCreationSettings returns nil in a cgo-less build.
+func NewSoftBodyCreationSettings() *SoftBodyCreationSettings { return nil }
+
+// NewSoftBodyCreationSettingsFor returns nil in a cgo-less build.
+func NewSoftBodyCreationSettingsFor(shared *SoftBodySharedSettings, position vecmath.RVec3, rotation vecmath.Quat, layer ObjectLayer) *SoftBodyCreationSettings {
+	return nil
+}
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 

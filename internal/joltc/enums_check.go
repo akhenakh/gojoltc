@@ -140,4 +140,8 @@ var (
 
 	_ [0]struct{} = [int32(C.JPH_TransmissionMode_Auto) - int32(TransmissionModeAuto)]struct{}{}
 	_ [0]struct{} = [int32(C.JPH_TransmissionMode_Manual) - int32(TransmissionModeManual)]struct{}{}
+
+	_ [0]struct{} = [int32(C.JPH_SoftBodyBendType_None) - int32(SoftBodyBendTypeNone)]struct{}{}
+	_ [0]struct{} = [int32(C.JPH_SoftBodyBendType_Distance) - int32(SoftBodyBendTypeDistance)]struct{}{}
+	_ [0]struct{} = [int32(C.JPH_SoftBodyBendType_Dihedral) - int32(SoftBodyBendTypeDihedral)]struct{}{}
 )

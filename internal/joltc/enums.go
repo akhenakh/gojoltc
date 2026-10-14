@@ -252,3 +252,12 @@ const (
 	TransmissionModeAuto   TransmissionMode = 0
 	TransmissionModeManual TransmissionMode = 1
 )
+
+// SoftBodyBendType selects the soft body bending constraint type.
+type SoftBodyBendType int32
+
+const (
+	SoftBodyBendTypeNone     SoftBodyBendType = 0
+	SoftBodyBendTypeDistance SoftBodyBendType = 1
+	SoftBodyBendTypeDihedral SoftBodyBendType = 2
+)

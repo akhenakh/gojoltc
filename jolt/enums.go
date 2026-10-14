@@ -255,3 +255,10 @@ const (
 	TransmissionModeAuto   = joltc.TransmissionModeAuto
 	TransmissionModeManual = joltc.TransmissionModeManual
 )
+
+// SoftBodyBendType values.
+const (
+	SoftBodyBendTypeNone     = joltc.SoftBodyBendTypeNone
+	SoftBodyBendTypeDistance = joltc.SoftBodyBendTypeDistance
+	SoftBodyBendTypeDihedral = joltc.SoftBodyBendTypeDihedral
+)

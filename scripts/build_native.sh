@@ -40,7 +40,7 @@ if [[ ! -f "$joltc_src/include/joltc.h" || ! -f "$jolt_src/Build/CMakeLists.txt"
 fi
 
 : "${JOLTC_BUILD_TYPE:=Release}"
-: "${JOLTC_DEBUG_RENDERER:=OFF}"
+: "${JOLTC_DEBUG_RENDERER:=ON}"
 : "${JOLTC_PROFILER:=OFF}"
 : "${JOLTC_ASSERTS:=OFF}"
 : "${JOLTC_AVX512:=OFF}"

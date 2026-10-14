@@ -7,7 +7,11 @@ package joltc
 */
 import "C"
 
-import "github.com/akhenakh/gojoltc/internal/vecmath"
+import (
+	"unsafe"
+
+	"github.com/akhenakh/gojoltc/internal/vecmath"
+)
 
 // DefaultConvexRadius mirrors JPH_DEFAULT_CONVEX_RADIUS.
 const DefaultConvexRadius float32 = 0.05
@@ -344,6 +348,16 @@ type Body struct {
 
 // ID returns the body's identifier.
 func (b *Body) ID() BodyID { return BodyID(C.JPH_Body_GetID(b.ptr)) }
+
+// BodyPtr returns the body with the given id, or nil. The returned body is
+// borrowed: it is valid while the body lives in the system.
+func (p *PhysicsSystem) BodyPtr(id BodyID) *Body {
+	ptr := C.JPH_PhysicsSystem_GetBodyPtr(p.ptr, C.JPH_BodyID(id))
+	if ptr == nil {
+		return nil
+	}
+	return &Body{ptr: (*C.JPH_Body)(unsafe.Pointer(ptr))}
+}
 
 // BodyInterface creates and manipulates bodies in a physics system.
 type BodyInterface struct {
