@@ -6,8 +6,8 @@ SINGLE_LIB := internal/native/single/lib/libjoltc.a
 DOUBLE_LIB := internal/native/double/lib/libjoltc_double.a
 GO_SOURCES := $(shell find . -name '*.go' -not -path './third_party/*' -not -path './internal/native/*')
 
-.PHONY: all native native-double native-sanitize native-clean fmt fmt-check vet lint test test-double \
-        build-nocgo cgo-boundary check check-double bench test-sanitize sbom examples clean
+.PHONY: all native native-double native-sanitize native-clean fmt fmt-check vet lint generate generate-check \
+        test test-double build-nocgo cgo-boundary check check-double bench test-sanitize sbom examples clean
 
 all: check
 
@@ -58,6 +58,12 @@ lint:
 		echo "golangci-lint not found; skipping (install for full lint)"; \
 	fi
 
+generate:
+	$(GO) run ./gen
+
+generate-check:
+	$(GO) run ./gen -check
+
 test: native
 	$(GO) test $(GOFLAGS) ./...
 
@@ -82,7 +88,7 @@ examples: native
 	$(GO) build ./examples/...
 
 # What must pass before a change is declared done.
-check: fmt-check vet cgo-boundary lint test build-nocgo
+check: fmt-check vet cgo-boundary lint generate-check test build-nocgo
 
 check-double: fmt-check vet cgo-boundary test-double build-nocgo
 

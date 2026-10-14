@@ -106,11 +106,23 @@ Both precisions are exercised in CI, along with an AddressSanitizer/UBSan run.
 
 ```sh
 make native          # build the single-precision native static library
-make check           # gofmt, vet, lint, tests, no-cgo build (the done gate)
+make check           # gofmt, vet, lint, generate-check, tests, no-cgo build (the done gate)
 make bench           # benchmarks with allocation reporting
 make test-sanitize   # native library + tests under ASan/UBSan
+make generate        # regenerate generated accessors + docs/coverage.md
 make sbom            # regenerate sbom.json
 ```
+
+## Code generation
+
+`gen/` parses `third_party/joltc/include/joltc.h` and emits thin accessor
+wrappers (getters/setters returning scalars, enums and vectors) for the
+functions not already hand-wrapped, into `internal/joltc/gen_accessors.go`
+(committed; `make generate-check` fails if it is stale). The generated methods
+hang off the existing handle types, so the public `jolt` API picks them up and
+the `!cgo` stub needs no change. Composite signatures (create/destroy,
+callbacks, POD structs) stay hand-written. See
+[`docs/coverage.md`](docs/coverage.md) for current coverage.
 
 Design decisions are recorded in [`docs/adr/`](docs/adr/) and the native
 dependency versions in [`sbom.json`](sbom.json).
