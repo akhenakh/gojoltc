@@ -10,15 +10,14 @@ the resulting Go binary has no runtime Jolt dependency.
 
 ## Status
 
-Early development. The wrapper is being built in phases (see
-`.operator/plans/implementation.md`):
+The full joltc C API surface exercised by the upstream test suite is wrapped:
+engine lifetimes, job system, layer filters, physics system, bodies, all shape
+types and settings, constraints, broad/narrow phase queries, characters,
+vehicles, skeletons and ragdolls. All 188 upstream joltc test cases are ported
+to Go and passing (`make test`).
 
-- **P0 — Bootstrap** ✅ native build pipeline, cgo boundary, engine init/shutdown.
-- P1 — math types and enums.
-- P2 — core simulation (physics system, bodies, shapes).
-- P3 — queries, listeners, constraints, characters.
-- P4 — double precision, benchmarks, sanitizers, full CI.
-- P5 — generated full-API coverage.
+Not yet wrapped: contact/activation/step listeners, debug renderer, soft bodies,
+and the long tail of accessors with no upstream test. See `.operator/plans/implementation.md`.
 
 ## Requirements
 
