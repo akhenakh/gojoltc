@@ -27,6 +27,10 @@ native-clean:
 	rm -rf internal/native
 
 # --- Go quality gates -----------------------------------------------------
+#
+# vet runs with -composites=false: vecmath value types (Vec3, Quat, Mat4, ...)
+# are constructed positionally (Vec3{1, 2, 3}), which the composites analyzer
+# rejects for types defined in another package. This is intentional.
 
 fmt:
 	gofmt -w $(GO_SOURCES)
@@ -36,7 +40,7 @@ fmt-check:
 	if [ -n "$$out" ]; then echo "gofmt needed:"; echo "$$out"; exit 1; fi
 
 vet:
-	$(GO) vet $(GOFLAGS) ./...
+	$(GO) vet -composites=false $(GOFLAGS) ./...
 
 cgo-boundary:
 	scripts/check_cgo_boundary.sh
