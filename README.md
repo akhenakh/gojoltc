@@ -60,7 +60,7 @@ allocations.
 Provenance: written in a single session by the **DeepSeek V4.1 Flash** model
 driving the **OpenCode 2** harness, for a total API cost of **$1.64**. The
 agent's working notes — integration contracts, FFI/build rules, decisions and
-plans — live in `.operator/` alongside the code.
+plans — are kept locally in `.operator/` and are deliberately not committed.
 
 ## Requirements
 
