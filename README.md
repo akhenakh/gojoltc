@@ -32,6 +32,36 @@ usability pass makes it actually usable in games:
 Not wrapped: `CharacterVirtual` (the rigid `Character` covers this today) and the
 remaining composite functions — see `docs/coverage.md`. See `.operator/plans/implementation.md`.
 
+## Methodology
+
+The upstream C++ test suites were used as the specification, in place of prose
+documentation:
+
+- **joltc `tests/`** — 9 files and 188 `TEST_F` cases, ported to Go and passing
+  (142 test functions under `jolt/`). They define which API surface must exist
+  and how it behaves, including the parts that are easy to get wrong: ownership
+  of layer interfaces and filters, precision variants, callback lifetimes.
+- **JoltPhysics `Samples/Tests`** — an oracle for behaviour the joltc suite does
+  not pin down (vehicle driving, character movement, soft bodies, terrain).
+  These informed the integration tests and the viewer scenes rather than being
+  ported case by case.
+- **Behavioural tests on top (35 more)** — where a ported case only *constructs*
+  objects (shapes, joints, vehicles), an integration test steps the world and
+  asserts an outcome: a soft body falls, a wheeled vehicle drives, a rover
+  traverses rough terrain. These fail when the simulation breaks, not merely when
+  a signature changes.
+
+Each change had to pass the project's own gate: `make check` (gofmt, `go vet`,
+the cgo-boundary check, generated-binding staleness, `go test ./...`, and a
+`CGO_ENABLED=0` library build), with separate double-precision and
+AddressSanitizer/UBSan legs, and `make bench` keeping the hot paths honest about
+allocations.
+
+Provenance: written in a single session by the **DeepSeek V4.1 Flash** model
+driving the **OpenCode 2** harness, for a total API cost of **$1.64**. The
+agent's working notes — integration contracts, FFI/build rules, decisions and
+plans — live in `.operator/` alongside the code.
+
 ## Requirements
 
 - Go with cgo enabled (`CGO_ENABLED=1`) and a C/C++ toolchain (gcc/clang, MSVC).
@@ -177,4 +207,4 @@ compute only. Both are linked statically, so there is no runtime shared object.
 
 ## License
 
-MIT.
+MIT — see [`LICENSE`](LICENSE).
