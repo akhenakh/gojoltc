@@ -106,7 +106,12 @@ bodies is allocation-free.
   [raylib-go](https://github.com/gen2brain/raylib-go), driving a character with
   WASD and drawing Jolt's debug geometry.
 - `cmd/joltviewer` — a JoltViewer-style viewer: orbit camera, pause/step,
-  wireframe toggle and switchable scenes (pyramid, sphere drop, soft-body cloth).
+  wireframe toggle and switchable scenes (pyramid, sphere drop, soft-body cloth,
+  vehicle).
+- `cmd/rover` — a small wheeled rover driving over procedural rough terrain,
+  with tire friction curves, a differential per axle, and ground-clearance and
+  forward-obstacle rangefinders (drive with WASD/arrows). The scenario is also
+  covered headlessly by `TestRoverDrivesOnTerrain`.
 
 `cmd/example` and `cmd/joltviewer` are **separate Go modules** (each with its own
 `go.mod` and a `replace` to the parent) so the library does not pull in raylib:
