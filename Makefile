@@ -7,7 +7,7 @@ DOUBLE_LIB := internal/native/double/lib/libjoltc_double.a
 GO_SOURCES := $(shell find . -name '*.go' -not -path './third_party/*' -not -path './internal/native/*')
 
 .PHONY: all native native-double native-clean fmt fmt-check vet lint test test-double \
-        build-nocgo cgo-boundary check check-double examples clean
+        build-nocgo cgo-boundary check check-double bench examples clean
 
 all: check
 
@@ -45,11 +45,21 @@ vet:
 cgo-boundary:
 	scripts/check_cgo_boundary.sh
 
+lint:
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run --timeout 5m; \
+	else \
+		echo "golangci-lint not found; skipping (install for full lint)"; \
+	fi
+
 test: native
 	$(GO) test $(GOFLAGS) ./...
 
 test-double: native-double
 	$(GO) test $(GOFLAGS) -tags jolt_double ./...
+
+bench: native
+	$(GO) test $(GOFLAGS) -run '^$$' -bench . -benchmem ./jolt/
 
 build-nocgo:
 	@pkgs="$$($(GO) list ./... | grep -v '/examples/')"; \
@@ -59,7 +69,7 @@ examples: native
 	$(GO) build ./examples/...
 
 # What must pass before a change is declared done.
-check: fmt-check vet cgo-boundary test build-nocgo
+check: fmt-check vet cgo-boundary lint test build-nocgo
 
 check-double: fmt-check vet cgo-boundary test-double build-nocgo
 

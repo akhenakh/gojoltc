@@ -19,19 +19,31 @@ type NarrowPhaseQuery struct {
 	ptr *C.JPH_NarrowPhaseQuery
 }
 
-// BroadPhaseQuery returns the broad-phase query interface.
+// BroadPhaseQuery returns the broad-phase query interface. The returned value
+// is cached on the system.
 func (p *PhysicsSystem) BroadPhaseQuery() *BroadPhaseQuery {
-	return &BroadPhaseQuery{ptr: C.JPH_PhysicsSystem_GetBroadPhaseQuery(p.ptr)}
+	if p.broadPhaseQuery == nil {
+		p.broadPhaseQuery = &BroadPhaseQuery{ptr: C.JPH_PhysicsSystem_GetBroadPhaseQuery(p.ptr)}
+	}
+	return p.broadPhaseQuery
 }
 
-// NarrowPhaseQuery returns the locking narrow-phase query interface.
+// NarrowPhaseQuery returns the locking narrow-phase query interface. The
+// returned value is cached on the system.
 func (p *PhysicsSystem) NarrowPhaseQuery() *NarrowPhaseQuery {
-	return &NarrowPhaseQuery{ptr: C.JPH_PhysicsSystem_GetNarrowPhaseQuery(p.ptr)}
+	if p.narrowPhaseQuery == nil {
+		p.narrowPhaseQuery = &NarrowPhaseQuery{ptr: C.JPH_PhysicsSystem_GetNarrowPhaseQuery(p.ptr)}
+	}
+	return p.narrowPhaseQuery
 }
 
 // NarrowPhaseQueryNoLock returns the non-locking narrow-phase query interface.
+// The returned value is cached on the system.
 func (p *PhysicsSystem) NarrowPhaseQueryNoLock() *NarrowPhaseQuery {
-	return &NarrowPhaseQuery{ptr: C.JPH_PhysicsSystem_GetNarrowPhaseQueryNoLock(p.ptr)}
+	if p.narrowPhaseNoLock == nil {
+		p.narrowPhaseNoLock = &NarrowPhaseQuery{ptr: C.JPH_PhysicsSystem_GetNarrowPhaseQueryNoLock(p.ptr)}
+	}
+	return p.narrowPhaseNoLock
 }
 
 // CastRay casts a ray against the world. direction's length is the ray length.

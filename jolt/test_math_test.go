@@ -209,7 +209,7 @@ func TestMathMat4(t *testing.T) {
 	})
 	t.Run("Zero", func(t *testing.T) {
 		m := Mat4Zero()
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			equalFloat(t, "x", m.Col[i].X, 0)
 			equalFloat(t, "y", m.Col[i].Y, 0)
 			equalFloat(t, "z", m.Col[i].Z, 0)
@@ -256,7 +256,7 @@ func TestMathMat4(t *testing.T) {
 	})
 	t.Run("Subtract", func(t *testing.T) {
 		m := Mat4Identity().Sub(Mat4Identity())
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			equalFloat(t, "x", m.Col[i].X, 0)
 			equalFloat(t, "y", m.Col[i].Y, 0)
 			equalFloat(t, "z", m.Col[i].Z, 0)

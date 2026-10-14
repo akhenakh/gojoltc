@@ -67,6 +67,24 @@ func main() {
 }
 ```
 
+## Performance
+
+The hot paths stay on the C heap where it matters:
+
+- `PhysicsSystem.Update` is a single cgo crossing; stepping parallelism comes
+  from Jolt's own job system, not from Go.
+- Sub-interfaces (`BodyInterface`, `NarrowPhaseQuery`, `BroadPhaseQuery`, ...)
+  are cached on the system, so repeated access neither allocates nor calls into C.
+- Per-frame loops should use the allocation-free batched accessors
+  (`PositionsInto`, `PositionsAndRotationsInto`, `ActiveBodyIDsInto`, ...), which
+  write into caller-owned slices. The per-call accessors allocate a small
+  C out-parameter on the Go heap each call.
+
+`make bench` reports allocations per op to keep this honest. On a 12-core
+machine with 1024 dynamic bodies: a full position sweep is ~34µs with 0
+allocations via `PositionsInto`, versus ~42µs with 1024 allocations via the
+per-call `Position`; `Update` with 512 bodies is allocation-free.
+
 ## Precision
 
 The default build is single precision. Building with `-tags jolt_double` switches

@@ -140,6 +140,14 @@ type PhysicsSystemSettings struct {
 // PhysicsSystem is the main simulation object.
 type PhysicsSystem struct {
 	ptr *C.JPH_PhysicsSystem
+
+	// Sub-interfaces are stable for the system's lifetime; caching them avoids
+	// a heap allocation and a cgo call on every access in hot loops.
+	bodyInterface       *BodyInterface
+	bodyInterfaceNoLock *BodyInterface
+	broadPhaseQuery     *BroadPhaseQuery
+	narrowPhaseQuery    *NarrowPhaseQuery
+	narrowPhaseNoLock   *NarrowPhaseQuery
 }
 
 // NewPhysicsSystem creates a physics system from settings.
@@ -179,14 +187,22 @@ func (p *PhysicsSystem) Destroy() {
 	}
 }
 
-// BodyInterface returns the locking body interface.
+// BodyInterface returns the locking body interface. The returned value is
+// cached on the system.
 func (p *PhysicsSystem) BodyInterface() *BodyInterface {
-	return &BodyInterface{ptr: C.JPH_PhysicsSystem_GetBodyInterface(p.ptr)}
+	if p.bodyInterface == nil {
+		p.bodyInterface = &BodyInterface{ptr: C.JPH_PhysicsSystem_GetBodyInterface(p.ptr)}
+	}
+	return p.bodyInterface
 }
 
-// BodyInterfaceNoLock returns the non-locking body interface.
+// BodyInterfaceNoLock returns the non-locking body interface. The returned
+// value is cached on the system.
 func (p *PhysicsSystem) BodyInterfaceNoLock() *BodyInterface {
-	return &BodyInterface{ptr: C.JPH_PhysicsSystem_GetBodyInterfaceNoLock(p.ptr)}
+	if p.bodyInterfaceNoLock == nil {
+		p.bodyInterfaceNoLock = &BodyInterface{ptr: C.JPH_PhysicsSystem_GetBodyInterfaceNoLock(p.ptr)}
+	}
+	return p.bodyInterfaceNoLock
 }
 
 // SetGravity sets the world gravity.

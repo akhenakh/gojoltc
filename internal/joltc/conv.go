@@ -38,7 +38,7 @@ func quatFromC(c C.JPH_Quat) vecmath.Quat {
 
 func mat4ToC(m vecmath.Mat4) C.JPH_Mat4 {
 	var out C.JPH_Mat4
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		out.column[i] = vec4ToC(m.Col[i])
 	}
 	return out
@@ -46,7 +46,7 @@ func mat4ToC(m vecmath.Mat4) C.JPH_Mat4 {
 
 func mat4FromC(c C.JPH_Mat4) vecmath.Mat4 {
 	var out vecmath.Mat4
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		out.Col[i] = vec4FromC(c.column[i])
 	}
 	return out

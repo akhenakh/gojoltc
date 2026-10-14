@@ -403,7 +403,7 @@ func TestPhysicsSystemMultipleBodies(t *testing.T) {
 	const numBodies = 10
 	bodyIDs := make([]BodyID, numBodies)
 
-	for i := 0; i < numBodies; i++ {
+	for i := range numBodies {
 		shape := NewSphereShape(1)
 		settings := NewBodyCreationSettings(shape, Vec3{float32(i) * 3, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 		body := bi.CreateBody(settings)

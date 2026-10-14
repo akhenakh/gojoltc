@@ -64,7 +64,7 @@ func main() {
 
 	system.OptimizeBroadPhase()
 
-	for i := 0; i < 60; i++ {
+	for range 60 {
 		system.Update(1.0/60.0, 1, jobSystem)
 	}
 

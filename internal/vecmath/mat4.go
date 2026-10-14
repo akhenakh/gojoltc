@@ -76,7 +76,7 @@ func Mat4Scale(s Vec3) Mat4 {
 // Add returns m + o.
 func (m Mat4) Add(o Mat4) Mat4 {
 	var r Mat4
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		r.Col[i] = m.Col[i].Add(o.Col[i])
 	}
 	return r
@@ -85,7 +85,7 @@ func (m Mat4) Add(o Mat4) Mat4 {
 // Sub returns m - o.
 func (m Mat4) Sub(o Mat4) Mat4 {
 	var r Mat4
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		r.Col[i] = m.Col[i].Sub(o.Col[i])
 	}
 	return r
@@ -94,7 +94,7 @@ func (m Mat4) Sub(o Mat4) Mat4 {
 // Mul returns the matrix product m * o.
 func (m Mat4) Mul(o Mat4) Mat4 {
 	var r Mat4
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		r.Col[i] = m.Col[0].MulScalar(o.Col[i].X).
 			Add(m.Col[1].MulScalar(o.Col[i].Y)).
 			Add(m.Col[2].MulScalar(o.Col[i].Z)).
@@ -106,7 +106,7 @@ func (m Mat4) Mul(o Mat4) Mat4 {
 // MulScalar returns m * s.
 func (m Mat4) MulScalar(s float32) Mat4 {
 	var r Mat4
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		r.Col[i] = m.Col[i].MulScalar(s)
 	}
 	return r
@@ -115,7 +115,7 @@ func (m Mat4) MulScalar(s float32) Mat4 {
 // Transposed returns the transpose of m.
 func (m Mat4) Transposed() Mat4 {
 	var r Mat4
-	for c := 0; c < 4; c++ {
+	for c := range 4 {
 		r.Col[c] = Vec4{m.Col[0].at(c), m.Col[1].at(c), m.Col[2].at(c), m.Col[3].at(c)}
 	}
 	return r
@@ -124,7 +124,7 @@ func (m Mat4) Transposed() Mat4 {
 // Inversed returns the inverse of m.
 func (m Mat4) Inversed() Mat4 {
 	var a [16]float32
-	for c := 0; c < 4; c++ {
+	for c := range 4 {
 		a[0*4+c] = m.Col[c].X
 		a[1*4+c] = m.Col[c].Y
 		a[2*4+c] = m.Col[c].Z
@@ -132,7 +132,7 @@ func (m Mat4) Inversed() Mat4 {
 	}
 	inv := invert4(a)
 	var r Mat4
-	for c := 0; c < 4; c++ {
+	for c := range 4 {
 		r.Col[c] = Vec4{inv[0*4+c], inv[1*4+c], inv[2*4+c], inv[3*4+c]}
 	}
 	return r

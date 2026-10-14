@@ -1,0 +1,29 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - modernize
+  settings:
+    govet:
+      # vecmath value types (Vec3, Quat, Mat4, ...) are intentionally built with
+      # positional literals; the composites analyzer rejects that for types
+      # defined in another package. See .operator/operator.md.
+      disable:
+        - composites
+  exclusions:
+    paths:
+      - third_party
+      - internal/native
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - third_party
+      - internal/native

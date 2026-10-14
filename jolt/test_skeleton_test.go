@@ -131,8 +131,7 @@ func TestSkeletonPoseRootOffset(t *testing.T) {
 	defer pose.Destroy()
 
 	pose.SetRootOffset(Vec3{1, 2, 3})
-	off := pose.RootOffset()
-	equalVec3(t, "offset", Vec3{off.X, off.Y, off.Z}, Vec3{1, 2, 3})
+	equalVec3(t, "offset", pose.RootOffset().ToVec3(), Vec3{1, 2, 3})
 }
 
 func TestSkeletonPoseJointState(t *testing.T) {
