@@ -17,8 +17,12 @@ usability pass makes it actually usable in games:
 - **Wheeled vehicles** drive: chassis + `NewWheelSettingsWV` wheels + a controller
   (with at least one differential), added as both a constraint and a step listener.
 - **Mesh and height-field** shapes for level and terrain geometry.
+- **Sensing queries**: filtered raycasts (closest hit and all hits), point and
+  shape overlap (with proximity volumes), and shape sweeps —
+  `BroadPhaseLayerFilter`/`ObjectLayerFilter`/`BodyFilter`/`ShapeFilter` as Go callbacks.
 - **Listeners** (contact/activation/step) and a **debug renderer**.
 - **Soft bodies**, characters, skeletons/ragdolls.
+- **Solver tuning** (`PhysicsSettings`), **collision groups**, physics materials.
 - The gameplay slice of `BodyInterface` (transforms, layers, user data, kinematic
   moves, torque/forces) and `PhysicsMaterial`.
 

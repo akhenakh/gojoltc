@@ -57,6 +57,17 @@ func Mat4InverseRotationTranslation(q Quat, t Vec3) Mat4 {
 // Mat4Scale returns a scale matrix.
 func Mat4Scale(s Vec3) Mat4 { return vecmath.Mat4Scale(s) }
 
+// RMat4Identity returns the identity world-space matrix.
+func RMat4Identity() RMat4 { return vecmath.RMat4Identity() }
+
+// RMat4Translation returns a world-space translation matrix.
+func RMat4Translation(t RVec3) RMat4 { return vecmath.RMat4Translation(t) }
+
+// RMat4RotationTranslation returns a world-space rotation + translation matrix.
+func RMat4RotationTranslation(q Quat, t RVec3) RMat4 {
+	return vecmath.RMat4RotationTranslation(q, t)
+}
+
 // RayCastGetPointOnRay returns the point at fraction along the ray defined by
 // origin and direction.
 func RayCastGetPointOnRay(origin, direction Vec3, fraction float32) Vec3 {

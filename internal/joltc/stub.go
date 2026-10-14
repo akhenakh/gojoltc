@@ -421,6 +421,30 @@ func NewTaperedCylinderShapeSettingsWithMaterial(halfHeightOfTaperedCylinder, to
 	return nil
 }
 
+// BroadPhaseLayerFilter restricts a query by broad-phase layer.
+type BroadPhaseLayerFilter struct{}
+
+// ObjectLayerFilter restricts a query by object layer.
+type ObjectLayerFilter struct{}
+
+// BodyFilter restricts a query by body.
+type BodyFilter struct{}
+
+// ShapeFilter restricts a query by shape.
+type ShapeFilter struct{}
+
+// NewBroadPhaseLayerFilter returns nil in a cgo-less build.
+func NewBroadPhaseLayerFilter(cb *BroadPhaseLayerFilterCallbacks) *BroadPhaseLayerFilter { return nil }
+
+// NewObjectLayerFilter returns nil in a cgo-less build.
+func NewObjectLayerFilter(cb *ObjectLayerFilterCallbacks) *ObjectLayerFilter { return nil }
+
+// NewBodyFilter returns nil in a cgo-less build.
+func NewBodyFilter(cb *BodyFilterCallbacks) *BodyFilter { return nil }
+
+// NewShapeFilter returns nil in a cgo-less build.
+func NewShapeFilter(cb *ShapeFilterCallbacks) *ShapeFilter { return nil }
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 

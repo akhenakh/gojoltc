@@ -24,3 +24,20 @@ func (v Vec3) ToRVec3() RVec3 { return RVec3{float64(v.X), float64(v.Y), float64
 
 // ToVec3 converts a world-space RVec3 to a local-space Vec3.
 func (r RVec3) ToVec3() Vec3 { return Vec3{float32(r.X), float32(r.Y), float32(r.Z)} }
+
+// RMat4Identity returns the identity world-space matrix.
+func RMat4Identity() RMat4 {
+	m := Mat4Identity()
+	return RMat4{Col: [3]Vec4{m.Col[0], m.Col[1], m.Col[2]}}
+}
+
+// RMat4Translation returns a world-space translation matrix.
+func RMat4Translation(t RVec3) RMat4 {
+	return RMat4{Col: [3]Vec4{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}}, Col3: t}
+}
+
+// RMat4RotationTranslation returns a world-space rotation + translation matrix.
+func RMat4RotationTranslation(q Quat, t RVec3) RMat4 {
+	m := Mat4Rotation(q)
+	return RMat4{Col: [3]Vec4{m.Col[0], m.Col[1], m.Col[2]}, Col3: t}
+}

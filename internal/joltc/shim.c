@@ -110,3 +110,89 @@ void joltcInstallDebugRendererProcs(void)
 	g_debugProcs.DrawText3D = joltcDrawText3DTramp;
 	JPH_DebugRenderer_SetProcs(&g_debugProcs);
 }
+
+/* --- query filters -------------------------------------------------------- */
+
+extern bool goJoltcBroadPhaseLayerFilterShouldCollide(void* ud, JPH_BroadPhaseLayer layer);
+extern bool goJoltcObjectLayerFilterShouldCollide(void* ud, JPH_ObjectLayer layer);
+extern bool goJoltcBodyFilterShouldCollide(void* ud, JPH_BodyID bodyID);
+extern bool goJoltcBodyFilterShouldCollideLocked(void* ud, const JPH_Body* body);
+extern bool goJoltcShapeFilterShouldCollide(void* ud, const JPH_Shape* shape2, const JPH_SubShapeID* subShapeID2);
+extern bool goJoltcShapeFilterShouldCollide2(void* ud, const JPH_Shape* shape1, const JPH_SubShapeID* subShapeID1, const JPH_Shape* shape2, const JPH_SubShapeID* subShapeID2);
+
+static bool joltcBPLayerTramp(void* ud, JPH_BroadPhaseLayer l) { return goJoltcBroadPhaseLayerFilterShouldCollide(ud, l); }
+static bool joltcObjLayerTramp(void* ud, JPH_ObjectLayer l) { return goJoltcObjectLayerFilterShouldCollide(ud, l); }
+static bool joltcBodyFilterTramp(void* ud, JPH_BodyID id) { return goJoltcBodyFilterShouldCollide(ud, id); }
+static bool joltcBodyFilterLockedTramp(void* ud, const JPH_Body* b) { return goJoltcBodyFilterShouldCollideLocked(ud, b); }
+static bool joltcShapeFilterTramp(void* ud, const JPH_Shape* s2, const JPH_SubShapeID* id2) { return goJoltcShapeFilterShouldCollide(ud, s2, id2); }
+static bool joltcShapeFilterTramp2(void* ud, const JPH_Shape* s1, const JPH_SubShapeID* id1, const JPH_Shape* s2, const JPH_SubShapeID* id2) { return goJoltcShapeFilterShouldCollide2(ud, s1, id1, s2, id2); }
+
+/* joltc stores the procs pointer, so these need static storage duration. */
+static JPH_BroadPhaseLayerFilter_Procs g_bpLayerFilterProcs;
+static JPH_ObjectLayerFilter_Procs g_objLayerFilterProcs;
+static JPH_BodyFilter_Procs g_bodyFilterProcs;
+static JPH_ShapeFilter_Procs g_shapeFilterProcs;
+
+void joltcInstallBroadPhaseLayerFilterProcs(void)
+{
+	g_bpLayerFilterProcs.ShouldCollide = joltcBPLayerTramp;
+	JPH_BroadPhaseLayerFilter_SetProcs(&g_bpLayerFilterProcs);
+}
+
+void joltcInstallObjectLayerFilterProcs(void)
+{
+	g_objLayerFilterProcs.ShouldCollide = joltcObjLayerTramp;
+	JPH_ObjectLayerFilter_SetProcs(&g_objLayerFilterProcs);
+}
+
+void joltcInstallBodyFilterProcs(void)
+{
+	g_bodyFilterProcs.ShouldCollide = joltcBodyFilterTramp;
+	g_bodyFilterProcs.ShouldCollideLocked = joltcBodyFilterLockedTramp;
+	JPH_BodyFilter_SetProcs(&g_bodyFilterProcs);
+}
+
+void joltcInstallShapeFilterProcs(void)
+{
+	g_shapeFilterProcs.ShouldCollide = joltcShapeFilterTramp;
+	g_shapeFilterProcs.ShouldCollide2 = joltcShapeFilterTramp2;
+	JPH_ShapeFilter_SetProcs(&g_shapeFilterProcs);
+}
+
+/* --- query collectors ----------------------------------------------------- */
+
+extern float goJoltcCastRayCollector(void* ud, const JPH_RayCastResult* result);
+extern float goJoltcCollidePointCollector(void* ud, const JPH_CollidePointResult* result);
+extern float goJoltcCollideShapeCollector(void* ud, const JPH_CollideShapeResult* result);
+extern float goJoltcCastShapeCollector(void* ud, const JPH_ShapeCastResult* result);
+
+static float joltcCastRayCollTramp(void* ud, const JPH_RayCastResult* r) { return goJoltcCastRayCollector(ud, r); }
+static float joltcCollidePointCollTramp(void* ud, const JPH_CollidePointResult* r) { return goJoltcCollidePointCollector(ud, r); }
+static float joltcCollideShapeCollTramp(void* ud, const JPH_CollideShapeResult* r) { return goJoltcCollideShapeCollector(ud, r); }
+static float joltcCastShapeCollTramp(void* ud, const JPH_ShapeCastResult* r) { return goJoltcCastShapeCollector(ud, r); }
+
+bool joltcNarrowPhaseCastRay(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* origin, const JPH_Vec3* dir, const JPH_RayCastSettings* s, uintptr_t ud,
+	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf)
+{
+	return JPH_NarrowPhaseQuery_CastRay2(q, origin, dir, s, joltcCastRayCollTramp, (void*)ud, bp, ol, bf, sf);
+}
+
+bool joltcNarrowPhaseCollidePoint(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* point, uintptr_t ud,
+	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf)
+{
+	return JPH_NarrowPhaseQuery_CollidePoint(q, point, joltcCollidePointCollTramp, (void*)ud, bp, ol, bf, sf);
+}
+
+bool joltcNarrowPhaseCollideShape(const JPH_NarrowPhaseQuery* q, const JPH_Shape* shape, const JPH_Vec3* scale, const JPH_RMat4* comTransform,
+	const JPH_CollideShapeSettings* s, JPH_RVec3* baseOffset, uintptr_t ud,
+	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf)
+{
+	return JPH_NarrowPhaseQuery_CollideShape(q, shape, scale, comTransform, s, baseOffset, joltcCollideShapeCollTramp, (void*)ud, bp, ol, bf, sf);
+}
+
+bool joltcNarrowPhaseCastShape(const JPH_NarrowPhaseQuery* q, const JPH_Shape* shape, const JPH_RMat4* worldTransform, const JPH_Vec3* dir,
+	const JPH_ShapeCastSettings* s, JPH_RVec3* baseOffset, uintptr_t ud,
+	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf)
+{
+	return JPH_NarrowPhaseQuery_CastShape(q, shape, worldTransform, dir, s, baseOffset, joltcCastShapeCollTramp, (void*)ud, bp, ol, bf, sf);
+}

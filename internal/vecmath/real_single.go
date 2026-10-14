@@ -19,3 +19,12 @@ func (v Vec3) ToRVec3() RVec3 { return v }
 
 // ToVec3 converts a world-space RVec3 to a local-space Vec3.
 func (r RVec3) ToVec3() Vec3 { return r }
+
+// RMat4Identity returns the identity world-space matrix.
+func RMat4Identity() RMat4 { return Mat4Identity() }
+
+// RMat4Translation returns a world-space translation matrix.
+func RMat4Translation(t RVec3) RMat4 { return Mat4Translation(t) }
+
+// RMat4RotationTranslation returns a world-space rotation + translation matrix.
+func RMat4RotationTranslation(q Quat, t RVec3) RMat4 { return Mat4RotationTranslation(q, t) }
