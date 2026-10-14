@@ -10,6 +10,7 @@
 #   JOLTC_ASSERTS          Jolt asserts on/off          (default: OFF)
 #   JOLTC_AVX512           AVX512 on/off                (default: OFF)
 #   JOLTC_LTO              Interprocedural opt (LTO)     (default: OFF)
+#   JOLTC_SANITIZE         Sanitizers, e.g. address,undefined (default: OFF)
 #   JOLTC_JOBS             Parallel build jobs          (default: nproc)
 set -euo pipefail
 
@@ -23,8 +24,15 @@ esac
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 joltc_src="$root/third_party/joltc"
 jolt_src="$root/third_party/JoltPhysics"
-build_dir="$root/internal/native/build-$variant"
-out_dir="$root/internal/native/$variant/lib"
+
+: "${JOLTC_SANITIZE:=OFF}"
+if [[ "$JOLTC_SANITIZE" != "OFF" ]]; then
+  out_variant="$variant-sanitize"
+else
+  out_variant="$variant"
+fi
+build_dir="$root/internal/native/build-$out_variant"
+out_dir="$root/internal/native/$out_variant/lib"
 
 if [[ ! -f "$joltc_src/include/joltc.h" || ! -f "$jolt_src/Build/CMakeLists.txt" ]]; then
   echo "error: submodules missing; run: git submodule update --init --recursive" >&2
@@ -38,6 +46,13 @@ fi
 : "${JOLTC_AVX512:=OFF}"
 : "${JOLTC_LTO:=OFF}"
 : "${JOLTC_JOBS:=$(nproc 2>/dev/null || echo 4)}"
+
+extra=()
+if [[ "$JOLTC_SANITIZE" != "OFF" ]]; then
+  echo ">> sanitizers: $JOLTC_SANITIZE"
+  extra+=("-DCMAKE_C_FLAGS=-fsanitize=$JOLTC_SANITIZE -fno-omit-frame-pointer -g")
+  extra+=("-DCMAKE_CXX_FLAGS=-fsanitize=$JOLTC_SANITIZE -fno-omit-frame-pointer -g")
+fi
 
 echo ">> configuring joltc ($variant, $JOLTC_BUILD_TYPE)"
 cmake -S "$joltc_src" -B "$build_dir" \
@@ -67,7 +82,8 @@ cmake -S "$joltc_src" -B "$build_dir" \
   -DTARGET_HELLO_WORLD=OFF \
   -DTARGET_PERFORMANCE_TEST=OFF \
   -DTARGET_SAMPLES=OFF \
-  -DTARGET_VIEWER=OFF
+  -DTARGET_VIEWER=OFF \
+  "${extra[@]}"
 
 echo ">> building joltc ($JOLTC_JOBS jobs)"
 cmake --build "$build_dir" --config "$JOLTC_BUILD_TYPE" -j "$JOLTC_JOBS"

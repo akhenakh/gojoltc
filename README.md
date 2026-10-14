@@ -94,11 +94,26 @@ the double-precision library. Single and double are separate builds.
 
 ## Platform support
 
-| OS      | Architectures   | Status        |
-| ------- | --------------- | ------------- |
-| Linux   | amd64, arm64    | supported     |
-| macOS   | arm64, amd64    | supported     |
-| Windows | amd64           | supported     |
+| OS      | Architectures | Status                                   |
+| ------- | ------------- | ---------------------------------------- |
+| Linux   | amd64, arm64  | CI-tested                                 |
+| macOS   | arm64         | CI-tested                                 |
+| Windows | amd64         | not yet (needs MinGW link flags)          |
+
+Both precisions are exercised in CI, along with an AddressSanitizer/UBSan run.
+
+## Development
+
+```sh
+make native          # build the single-precision native static library
+make check           # gofmt, vet, lint, tests, no-cgo build (the done gate)
+make bench           # benchmarks with allocation reporting
+make test-sanitize   # native library + tests under ASan/UBSan
+make sbom            # regenerate sbom.json
+```
+
+Design decisions are recorded in [`docs/adr/`](docs/adr/) and the native
+dependency versions in [`sbom.json`](sbom.json).
 
 ## Native dependencies
 
@@ -107,8 +122,9 @@ Vendored as git submodules under `third_party/`:
 - [joltc](https://github.com/amerkoleci/joltc) — MIT
 - [JoltPhysics](https://github.com/jrouwe/JoltPhysics) — MIT, pinned at `v5.6.0`
 
+Versions and licenses are tracked in [`sbom.json`](sbom.json) (`make sbom`).
 GPU compute backends (DX12/Vulkan/Metal) are disabled; the build uses Jolt's CPU
-compute only.
+compute only. Both are linked statically, so there is no runtime shared object.
 
 ## License
 

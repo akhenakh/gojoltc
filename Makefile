@@ -6,8 +6,8 @@ SINGLE_LIB := internal/native/single/lib/libjoltc.a
 DOUBLE_LIB := internal/native/double/lib/libjoltc_double.a
 GO_SOURCES := $(shell find . -name '*.go' -not -path './third_party/*' -not -path './internal/native/*')
 
-.PHONY: all native native-double native-clean fmt fmt-check vet lint test test-double \
-        build-nocgo cgo-boundary check check-double bench examples clean
+.PHONY: all native native-double native-sanitize native-clean fmt fmt-check vet lint test test-double \
+        build-nocgo cgo-boundary check check-double bench test-sanitize sbom examples clean
 
 all: check
 
@@ -16,6 +16,12 @@ all: check
 native: $(SINGLE_LIB)
 
 native-double: $(DOUBLE_LIB)
+
+native-sanitize:
+	JOLTC_SANITIZE=address,undefined scripts/build_native.sh single
+
+sbom:
+	scripts/gen_sbom.sh
 
 $(SINGLE_LIB):
 	scripts/build_native.sh single
@@ -60,6 +66,13 @@ test-double: native-double
 
 bench: native
 	$(GO) test $(GOFLAGS) -run '^$$' -bench . -benchmem ./jolt/
+
+test-sanitize: native-sanitize
+	# Leak detection is off: third_party/joltc leaks a default EmptyShapeSettings
+	# in JPH_CharacterBaseSettings_Init that cannot be freed from outside. ASan
+	# still catches memory errors and UBSan catches undefined behaviour.
+	ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+	$(GO) test $(GOFLAGS) -tags joltc_asan -asan ./...
 
 build-nocgo:
 	@pkgs="$$($(GO) list ./... | grep -v '/examples/')"; \

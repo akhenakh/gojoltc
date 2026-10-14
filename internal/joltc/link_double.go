@@ -1,4 +1,4 @@
-//go:build cgo && jolt_double
+//go:build cgo && jolt_double && !joltc_asan
 
 // Double-precision native library (built by: make native-double).
 //

@@ -1,0 +1,33 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "name": "github.com/akhenakh/gojoltc",
+  "documentNamespace": "https://github.com/akhenakh/gojoltc/sbom",
+  "creationInfo": {
+    "created": "2026-10-14T19:38:45Z",
+    "creators": ["Tool: scripts/gen_sbom.sh"]
+  },
+  "packages": [
+    {
+      "name": "github.com/akhenakh/gojoltc",
+      "versionInfo": "go1.27.1",
+      "downloadLocation": "NOASSERTION",
+      "licenseConcluded": "MIT",
+      "primaryPackagePurpose": "APPLICATION"
+    },
+    {
+      "name": "joltc",
+      "versionInfo": "886e088675bae3a086f8318c7803f8ee962c2f2c",
+      "downloadLocation": "https://github.com/amerkoleci/joltc",
+      "licenseConcluded": "MIT",
+      "comment": "C API for JoltPhysics, vendored as a git submodule (third_party/joltc)."
+    },
+    {
+      "name": "JoltPhysics",
+      "versionInfo": "v5.6.0",
+      "downloadLocation": "https://github.com/jrouwe/JoltPhysics",
+      "licenseConcluded": "MIT",
+      "comment": "Vendored as a git submodule (third_party/JoltPhysics). Linked statically; no runtime shared object."
+    }
+  ]
+}

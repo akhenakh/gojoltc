@@ -357,7 +357,9 @@ func TestShapesStaticCompoundShapeCreate(t *testing.T) {
 	defer settings.Destroy()
 
 	sphere1 := NewSphereShape(1)
+	defer sphere1.Destroy()
 	sphere2 := NewSphereShape(0.5)
+	defer sphere2.Destroy()
 	settings.AddShape(Vec3{-1, 0, 0}, QuatIdentity(), sphere1, 0)
 	settings.AddShape(Vec3{1, 0, 0}, QuatIdentity(), sphere2, 0)
 
@@ -378,6 +380,7 @@ func TestShapesMutableCompoundShapeCreate(t *testing.T) {
 	defer shape.Destroy()
 
 	sphere := NewSphereShape(1)
+	defer sphere.Destroy()
 	index := shape.AddShape(Vec3{0, 0, 0}, QuatIdentity(), sphere, 0, ^uint32(0))
 	if index != 0 {
 		t.Errorf("index = %d, want 0", index)

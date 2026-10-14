@@ -15,25 +15,41 @@ import (
 )
 
 // CharacterSettings holds settings for a character.
-type CharacterSettings struct{ ptr *C.JPH_CharacterSettings }
+type CharacterSettings struct {
+	ptr *C.JPH_CharacterSettings
+	// ownShape is true while base.shape is the default shape allocated by
+	// JPH_CharacterSettings_Init; we must free it ourselves (joltc does not).
+	ownShape bool
+}
 
 // NewCharacterSettings creates character settings with Jolt defaults.
 func NewCharacterSettings() *CharacterSettings {
 	p := (*C.JPH_CharacterSettings)(C.malloc(C.size_t(unsafe.Sizeof(C.JPH_CharacterSettings{}))))
 	C.JPH_CharacterSettings_Init(p)
-	return &CharacterSettings{ptr: p}
+	return &CharacterSettings{ptr: p, ownShape: true}
 }
 
-// Destroy releases the settings.
+// Destroy releases the settings, including the default shape allocated by Init
+// unless the caller replaced it.
 func (s *CharacterSettings) Destroy() {
 	if s.ptr != nil {
+		if s.ownShape && s.ptr.base.shape != nil {
+			C.JPH_Shape_Destroy(s.ptr.base.shape)
+		}
 		C.free(unsafe.Pointer(s.ptr))
 		s.ptr = nil
 	}
 }
 
-// SetShape sets the character shape.
-func (s *CharacterSettings) SetShape(shape *Shape) { s.ptr.base.shape = shape.ptr }
+// SetShape sets the character shape, releasing the default shape allocated by
+// Init if it was still owned.
+func (s *CharacterSettings) SetShape(shape *Shape) {
+	if s.ownShape && s.ptr.base.shape != nil {
+		C.JPH_Shape_Destroy(s.ptr.base.shape)
+	}
+	s.ptr.base.shape = shape.ptr
+	s.ownShape = false
+}
 
 // SetLayer sets the object layer.
 func (s *CharacterSettings) SetLayer(layer ObjectLayer) { s.ptr.layer = C.JPH_ObjectLayer(layer) }
@@ -103,19 +119,24 @@ func (c *Character) SetLinearVelocity(v vecmath.Vec3, lockBodies bool) {
 
 // CharacterVirtualSettings holds settings for a virtual character.
 type CharacterVirtualSettings struct {
-	ptr *C.JPH_CharacterVirtualSettings
+	ptr      *C.JPH_CharacterVirtualSettings
+	ownShape bool
 }
 
 // NewCharacterVirtualSettings creates virtual character settings with defaults.
 func NewCharacterVirtualSettings() *CharacterVirtualSettings {
 	p := (*C.JPH_CharacterVirtualSettings)(C.malloc(C.size_t(unsafe.Sizeof(C.JPH_CharacterVirtualSettings{}))))
 	C.JPH_CharacterVirtualSettings_Init(p)
-	return &CharacterVirtualSettings{ptr: p}
+	return &CharacterVirtualSettings{ptr: p, ownShape: true}
 }
 
-// Destroy releases the settings.
+// Destroy releases the settings, including the default shape allocated by Init
+// unless the caller replaced it.
 func (s *CharacterVirtualSettings) Destroy() {
 	if s.ptr != nil {
+		if s.ownShape && s.ptr.base.shape != nil {
+			C.JPH_Shape_Destroy(s.ptr.base.shape)
+		}
 		C.free(unsafe.Pointer(s.ptr))
 		s.ptr = nil
 	}
@@ -124,5 +145,12 @@ func (s *CharacterVirtualSettings) Destroy() {
 // Mass returns the character mass.
 func (s *CharacterVirtualSettings) Mass() float32 { return float32(s.ptr.mass) }
 
-// SetShape sets the character shape.
-func (s *CharacterVirtualSettings) SetShape(shape *Shape) { s.ptr.base.shape = shape.ptr }
+// SetShape sets the character shape, releasing the default shape allocated by
+// Init if it was still owned.
+func (s *CharacterVirtualSettings) SetShape(shape *Shape) {
+	if s.ownShape && s.ptr.base.shape != nil {
+		C.JPH_Shape_Destroy(s.ptr.base.shape)
+	}
+	s.ptr.base.shape = shape.ptr
+	s.ownShape = false
+}
