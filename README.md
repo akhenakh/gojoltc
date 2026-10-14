@@ -81,9 +81,10 @@ The hot paths stay on the C heap where it matters:
   C out-parameter on the Go heap each call.
 
 `make bench` reports allocations per op to keep this honest. On a 12-core
-machine with 1024 dynamic bodies: a full position sweep is ~34µs with 0
-allocations via `PositionsInto`, versus ~42µs with 1024 allocations via the
-per-call `Position`; `Update` with 512 bodies is allocation-free.
+machine with 1024 dynamic bodies: a full position sweep is ~11µs with 0
+allocations via `PositionsInto` (one cgo crossing for the whole sweep), versus
+~49µs with 1024 allocations via the per-call `Position`; `Update` with 512
+bodies is allocation-free.
 
 ## Precision
 

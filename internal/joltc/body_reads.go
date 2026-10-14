@@ -4,6 +4,12 @@ package joltc
 
 /*
 #include <joltc.h>
+
+extern void joltc_body_positions(JPH_BodyInterface* bi, const JPH_BodyID* ids, uint32_t count, JPH_RVec3* out);
+extern void joltc_body_rotations(JPH_BodyInterface* bi, const JPH_BodyID* ids, uint32_t count, JPH_Quat* out);
+extern void joltc_body_linear_velocities(JPH_BodyInterface* bi, const JPH_BodyID* ids, uint32_t count, JPH_Vec3* out);
+extern void joltc_body_position_and_rotation(JPH_BodyInterface* bi, const JPH_BodyID* ids, uint32_t count, JPH_RVec3* outPos, JPH_Quat* outRot);
+extern void joltc_body_set_positions(JPH_BodyInterface* bi, const JPH_BodyID* ids, uint32_t count, JPH_RVec3* in, JPH_Activation activation);
 */
 import "C"
 
@@ -14,8 +20,8 @@ import (
 )
 
 // Compile-time checks that the Go math types are byte-compatible with the C
-// structs that Batched reads write into caller-owned slices. If either layout
-// drifts, the build fails rather than silently corrupting memory.
+// structs that the batched reads write into caller-owned slices. If either
+// layout drifts, the build fails rather than silently corrupting memory.
 var (
 	_ [0]struct{} = [int(unsafe.Sizeof(vecmath.Vec3{}) - unsafe.Sizeof(C.JPH_Vec3{}))]struct{}{}
 	_ [0]struct{} = [int(unsafe.Sizeof(vecmath.Vec4{}) - unsafe.Sizeof(C.JPH_Vec4{}))]struct{}{}
@@ -25,18 +31,19 @@ var (
 	_ [0]struct{} = [int(unsafe.Sizeof(vecmath.RMat4{}) - unsafe.Sizeof(C.JPH_RMat4{}))]struct{}{}
 )
 
-// The *Into methods read many bodies in one sweep without allocating: results
-// are written into caller-owned slices, whose element addresses are passed to
-// C directly. Use these in per-frame loops instead of the per-call accessors,
-// which heap-allocate their C out-parameter.
+// The *Into methods read or write many bodies in a single cgo call (the C loop
+// lives in shim.c) without allocating: results go into caller-owned slices.
+// Use these in per-frame loops instead of the per-call accessors, which
+// heap-allocate their C out-parameter and cross cgo once per body.
 
 // PositionsInto writes the positions of ids into dst and returns the number
 // written (min(len(ids), len(dst))).
 func (bi *BodyInterface) PositionsInto(ids []BodyID, dst []vecmath.RVec3) int {
 	n := min(len(ids), len(dst))
-	for i := range n {
-		C.JPH_BodyInterface_GetPosition(bi.ptr, C.JPH_BodyID(ids[i]), (*C.JPH_RVec3)(unsafe.Pointer(&dst[i])))
+	if n == 0 {
+		return 0
 	}
+	C.joltc_body_positions(bi.ptr, (*C.JPH_BodyID)(unsafe.Pointer(&ids[0])), C.uint32_t(n), (*C.JPH_RVec3)(unsafe.Pointer(&dst[0])))
 	return n
 }
 
@@ -44,9 +51,10 @@ func (bi *BodyInterface) PositionsInto(ids []BodyID, dst []vecmath.RVec3) int {
 // written (min(len(ids), len(dst))).
 func (bi *BodyInterface) RotationsInto(ids []BodyID, dst []vecmath.Quat) int {
 	n := min(len(ids), len(dst))
-	for i := range n {
-		C.JPH_BodyInterface_GetRotation(bi.ptr, C.JPH_BodyID(ids[i]), (*C.JPH_Quat)(unsafe.Pointer(&dst[i])))
+	if n == 0 {
+		return 0
 	}
+	C.joltc_body_rotations(bi.ptr, (*C.JPH_BodyID)(unsafe.Pointer(&ids[0])), C.uint32_t(n), (*C.JPH_Quat)(unsafe.Pointer(&dst[0])))
 	return n
 }
 
@@ -54,9 +62,10 @@ func (bi *BodyInterface) RotationsInto(ids []BodyID, dst []vecmath.Quat) int {
 // the number written (min(len(ids), len(dst))).
 func (bi *BodyInterface) LinearVelocitiesInto(ids []BodyID, dst []vecmath.Vec3) int {
 	n := min(len(ids), len(dst))
-	for i := range n {
-		C.JPH_BodyInterface_GetLinearVelocity(bi.ptr, C.JPH_BodyID(ids[i]), (*C.JPH_Vec3)(unsafe.Pointer(&dst[i])))
+	if n == 0 {
+		return 0
 	}
+	C.joltc_body_linear_velocities(bi.ptr, (*C.JPH_BodyID)(unsafe.Pointer(&ids[0])), C.uint32_t(n), (*C.JPH_Vec3)(unsafe.Pointer(&dst[0])))
 	return n
 }
 
@@ -64,9 +73,10 @@ func (bi *BodyInterface) LinearVelocitiesInto(ids []BodyID, dst []vecmath.Vec3) 
 // returns the number written (min(len(ids), len(dstP), len(dstR))).
 func (bi *BodyInterface) PositionsAndRotationsInto(ids []BodyID, dstP []vecmath.RVec3, dstR []vecmath.Quat) int {
 	n := min(len(ids), len(dstP), len(dstR))
-	for i := range n {
-		C.JPH_BodyInterface_GetPositionAndRotation(bi.ptr, C.JPH_BodyID(ids[i]), (*C.JPH_RVec3)(unsafe.Pointer(&dstP[i])), (*C.JPH_Quat)(unsafe.Pointer(&dstR[i])))
+	if n == 0 {
+		return 0
 	}
+	C.joltc_body_position_and_rotation(bi.ptr, (*C.JPH_BodyID)(unsafe.Pointer(&ids[0])), C.uint32_t(n), (*C.JPH_RVec3)(unsafe.Pointer(&dstP[0])), (*C.JPH_Quat)(unsafe.Pointer(&dstR[0])))
 	return n
 }
 
@@ -74,8 +84,9 @@ func (bi *BodyInterface) PositionsAndRotationsInto(ids []BodyID, dstP []vecmath.
 // written (min(len(ids), len(src))).
 func (bi *BodyInterface) SetPositionsInto(ids []BodyID, src []vecmath.RVec3, activation Activation) int {
 	n := min(len(ids), len(src))
-	for i := range n {
-		C.JPH_BodyInterface_SetPosition(bi.ptr, C.JPH_BodyID(ids[i]), (*C.JPH_RVec3)(unsafe.Pointer(&src[i])), C.JPH_Activation(activation))
+	if n == 0 {
+		return 0
 	}
+	C.joltc_body_set_positions(bi.ptr, (*C.JPH_BodyID)(unsafe.Pointer(&ids[0])), C.uint32_t(n), (*C.JPH_RVec3)(unsafe.Pointer(&src[0])), C.JPH_Activation(activation))
 	return n
 }
