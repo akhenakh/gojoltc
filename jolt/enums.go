@@ -51,6 +51,8 @@ type (
 	SixDOFConstraintAxis = joltc.SixDOFConstraintAxis
 	// MeshShapeBuildQuality trades mesh build time against runtime performance.
 	MeshShapeBuildQuality = joltc.MeshShapeBuildQuality
+	// TransmissionMode selects how a transmission shifts gears.
+	TransmissionMode = joltc.TransmissionMode
 )
 
 // PhysicsUpdateError values.
@@ -246,4 +248,10 @@ const (
 const (
 	MeshShapeBuildQualityFavorRuntimePerformance = joltc.MeshShapeBuildQualityFavorRuntimePerformance
 	MeshShapeBuildQualityFavorBuildSpeed         = joltc.MeshShapeBuildQualityFavorBuildSpeed
+)
+
+// TransmissionMode values.
+const (
+	TransmissionModeAuto   = joltc.TransmissionModeAuto
+	TransmissionModeManual = joltc.TransmissionModeManual
 )

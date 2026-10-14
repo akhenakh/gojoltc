@@ -244,3 +244,11 @@ const (
 	MeshShapeBuildQualityFavorRuntimePerformance MeshShapeBuildQuality = 0
 	MeshShapeBuildQualityFavorBuildSpeed         MeshShapeBuildQuality = 1
 )
+
+// TransmissionMode selects how a transmission shifts gears.
+type TransmissionMode int32
+
+const (
+	TransmissionModeAuto   TransmissionMode = 0
+	TransmissionModeManual TransmissionMode = 1
+)

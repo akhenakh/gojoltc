@@ -269,6 +269,62 @@ func NewSkeletonMapper() *SkeletonMapper { return nil }
 // NewRagdollSettings returns nil in a cgo-less build.
 func NewRagdollSettings() *RagdollSettings { return nil }
 
+// WheelSettings holds settings for a wheel.
+type WheelSettings struct{}
+
+// Wheel is a runtime wheel instance.
+type Wheel struct{}
+
+// VehicleCollisionTester is a vehicle ground collision tester.
+type VehicleCollisionTester struct{}
+
+// VehicleTransmissionSettings holds transmission settings.
+type VehicleTransmissionSettings struct{}
+
+// WheeledVehicleControllerSettings holds settings for a wheeled vehicle controller.
+type WheeledVehicleControllerSettings struct{}
+
+// NewWheelSettings returns nil in a cgo-less build.
+func NewWheelSettings() *WheelSettings { return nil }
+
+// NewWheel returns nil in a cgo-less build.
+func NewWheel(settings *WheelSettings) *Wheel { return nil }
+
+// NewVehicleCollisionTesterRay returns nil in a cgo-less build.
+func NewVehicleCollisionTesterRay(layer ObjectLayer, up vecmath.Vec3, maxSlopeAngle float32) *VehicleCollisionTester {
+	return nil
+}
+
+// NewVehicleCollisionTesterCastSphere returns nil in a cgo-less build.
+func NewVehicleCollisionTesterCastSphere(layer ObjectLayer, radius float32, up vecmath.Vec3, maxSlopeAngle float32) *VehicleCollisionTester {
+	return nil
+}
+
+// NewVehicleCollisionTesterCastCylinder returns nil in a cgo-less build.
+func NewVehicleCollisionTesterCastCylinder(layer ObjectLayer, convexRadiusFraction float32) *VehicleCollisionTester {
+	return nil
+}
+
+// NewVehicleEngineSettings returns zero settings in a cgo-less build.
+func NewVehicleEngineSettings() VehicleEngineSettings { return VehicleEngineSettings{} }
+
+// NewVehicleDifferentialSettings returns zero settings in a cgo-less build.
+func NewVehicleDifferentialSettings() VehicleDifferentialSettings {
+	return VehicleDifferentialSettings{}
+}
+
+// NewVehicleAntiRollBar returns zero settings in a cgo-less build.
+func NewVehicleAntiRollBar() VehicleAntiRollBar { return VehicleAntiRollBar{} }
+
+// NewVehicleConstraintSettings returns zero settings in a cgo-less build.
+func NewVehicleConstraintSettings() VehicleConstraintSettings { return VehicleConstraintSettings{} }
+
+// NewVehicleTransmissionSettings returns nil in a cgo-less build.
+func NewVehicleTransmissionSettings() *VehicleTransmissionSettings { return nil }
+
+// NewWheeledVehicleControllerSettings returns nil in a cgo-less build.
+func NewWheeledVehicleControllerSettings() *WheeledVehicleControllerSettings { return nil }
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 

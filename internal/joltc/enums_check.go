@@ -137,4 +137,7 @@ var (
 
 	_ [0]struct{} = [int32(C.JPH_Mesh_Shape_BuildQuality_FavorRuntimePerformance) - int32(MeshShapeBuildQualityFavorRuntimePerformance)]struct{}{}
 	_ [0]struct{} = [int32(C.JPH_Mesh_Shape_BuildQuality_FavorBuildSpeed) - int32(MeshShapeBuildQualityFavorBuildSpeed)]struct{}{}
+
+	_ [0]struct{} = [int32(C.JPH_TransmissionMode_Auto) - int32(TransmissionModeAuto)]struct{}{}
+	_ [0]struct{} = [int32(C.JPH_TransmissionMode_Manual) - int32(TransmissionModeManual)]struct{}{}
 )
