@@ -148,10 +148,20 @@ func main() {
 	defer character.Destroy()
 	characterID := character.BodyID()
 
-	rl.SetConfigFlags(rl.FlagVsyncHint)
+	// FlagWindowHighdpi: on a scaled display (e.g. 125%) the OS hands back a
+	// larger framebuffer than the logical window size. Without this flag raylib
+	// keeps the render surface at the logical size, so the 3D viewport covers
+	// only part of the window and the rest stays blank. 2D drawing keeps its
+	// logical coordinates (raylib applies the display scale), so the HUD is
+	// unaffected - just rendered at the display's real resolution.
+	rl.SetConfigFlags(rl.FlagVsyncHint | rl.FlagWindowHighdpi)
 	rl.InitWindow(1280, 720, "gojoltc — joltc 01_HelloWorld")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
+	// Report the real surface sizes: on a scaled display the render size is larger
+	// than the logical one, which is what makes the 3D viewport fill the window.
+	fmt.Printf("window: %dx%d logical, %dx%d render, display scale %.2f\n",
+		rl.GetScreenWidth(), rl.GetScreenHeight(), rl.GetRenderWidth(), rl.GetRenderHeight(), rl.GetWindowScaleDPI().X)
 
 	cam := newOrbitCamera(rl.Vector3{X: 0, Y: 1, Z: 0}, 0.8, 0.5, 18)
 
