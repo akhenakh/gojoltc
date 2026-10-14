@@ -19,6 +19,10 @@
 /cmd/*/joltviewer
 /cmd/*/rover
 
+# Screenshots written by the viewer's P key (raylib TakeScreenshot)
+/joltviewer.png
+/cmd/*/joltviewer.png
+
 # CMake
 CMakeCache.txt
 CMakeFiles/
