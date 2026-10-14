@@ -109,7 +109,7 @@ func (w *world) destroy() {
 
 // --- scenes -----------------------------------------------------------------
 
-var sceneNames = []string{"Pyramid", "Sphere Drop", "Soft Body Cloth"}
+var sceneNames = []string{"Pyramid", "Sphere Drop", "Soft Body Cloth", "Vehicle"}
 
 func addFloor(bi *jolt.BodyInterface) {
 	shape := jolt.NewBoxShape(jolt.Vec3{50, 1, 50}, jolt.DefaultConvexRadius)
@@ -186,17 +186,82 @@ func buildSoftCloth(bi *jolt.BodyInterface) {
 	bi.CreateAndAddSoftBody(settings, jolt.ActivationActivate)
 }
 
-func buildScene(system *jolt.PhysicsSystem, index int) {
+// buildVehicle builds a drivable vehicle and returns a function that applies
+// driver input each frame.
+func buildVehicle(system *jolt.PhysicsSystem) func() {
+	bi := system.BodyInterface()
+
+	chassisShape := jolt.NewBoxShape(jolt.Vec3{1.5, 0.5, 1.0}, jolt.DefaultConvexRadius)
+	chassisSettings := jolt.NewBodyCreationSettings(chassisShape, jolt.RVec3{0, 0.8, 0}, jolt.QuatIdentity(), jolt.MotionTypeDynamic, layerMoving)
+	chassisID := bi.CreateAndAddBody(chassisSettings, jolt.ActivationActivate)
+	chassisSettings.Destroy()
+	chassisShape.Destroy()
+
+	wheels := make([]*jolt.WheelSettings, 0, 4)
+	for _, p := range []jolt.Vec3{{-1, -0.3, 0.8}, {1, -0.3, 0.8}, {-1, -0.3, -0.8}, {1, -0.3, -0.8}} {
+		w := jolt.NewWheelSettingsWV()
+		w.SetPosition(p)
+		w.SetRadius(0.4)
+		w.SetWidth(0.3)
+		w.SetSuspensionMinLength(0.1)
+		w.SetSuspensionMaxLength(0.5)
+		w.SetMaxSteerAngle(0.5)
+		w.SetMaxBrakeTorque(3000)
+		wheels = append(wheels, w)
+	}
+
+	controller := jolt.NewWheeledVehicleControllerSettings()
+	controller.AddDifferential(0, 1)
+	controller.AddDifferential(2, 3)
+
+	settings := jolt.NewVehicleConstraintSettings()
+	vehicle := jolt.NewVehicleConstraint(system.BodyPtr(chassisID), &settings, wheels, controller)
+
+	tester := jolt.NewVehicleCollisionTesterRay(layerMoving, jolt.Vec3{0, 1, 0}, 0.5)
+	vehicle.SetCollisionTester(tester)
+
+	system.AddConstraint(vehicle.AsConstraint())
+	system.AddStepListener(vehicle.StepListener())
+
+	ctrl := vehicle.Controller()
+	return func() {
+		fwd, right, brake := float32(0), float32(0), float32(0)
+		if rl.IsKeyDown(rl.KeyUp) {
+			fwd = 1
+		}
+		if rl.IsKeyDown(rl.KeyDown) {
+			fwd = -1
+		}
+		if rl.IsKeyDown(rl.KeyLeft) {
+			right = 0.5
+		}
+		if rl.IsKeyDown(rl.KeyRight) {
+			right = -0.5
+		}
+		if rl.IsKeyDown(rl.KeyB) {
+			brake = 1
+		}
+		ctrl.SetDriverInput(fwd, right, brake, 0)
+	}
+}
+
+func buildScene(system *jolt.PhysicsSystem, index int) func() {
 	bi := system.BodyInterface()
 	switch index % len(sceneNames) {
 	case 0:
 		buildPyramid(bi)
 	case 1:
 		buildSphereDrop(bi)
-	default:
+	case 2:
 		buildSoftCloth(bi)
+	default:
+		addFloor(bi)
+		drive := buildVehicle(system)
+		system.OptimizeBroadPhase()
+		return drive
 	}
 	system.OptimizeBroadPhase()
+	return nil
 }
 
 // --- main -------------------------------------------------------------------
@@ -218,7 +283,7 @@ func main() {
 
 	scene := 0
 	w := newWorld()
-	buildScene(w.system, scene)
+	drive := buildScene(w.system, scene)
 	defer func() { w.destroy() }()
 
 	camera := rl.Camera3D{
@@ -239,13 +304,13 @@ func main() {
 			w.destroy()
 			scene++
 			w = newWorld()
-			buildScene(w.system, scene)
+			drive = buildScene(w.system, scene)
 			paused = false
 		}
 		if rl.IsKeyPressed(rl.KeyR) {
 			w.destroy()
 			w = newWorld()
-			buildScene(w.system, scene)
+			drive = buildScene(w.system, scene)
 			paused = false
 		}
 		if rl.IsKeyPressed(rl.KeySpace) {
@@ -258,6 +323,9 @@ func main() {
 			wireframe = !wireframe
 		}
 
+		if drive != nil {
+			drive()
+		}
 		if !paused || stepOnce {
 			w.system.Update(rl.GetFrameTime(), 1, w.jobSystem)
 		}
@@ -289,6 +357,7 @@ func main() {
 			rl.DrawText("PAUSED", 10, 56, 20, rl.Red)
 		}
 		rl.DrawText("N next  R reset  Space pause  Right step  F wireframe  mouse orbit", 10, 80, 18, rl.Gray)
+		rl.DrawText("vehicle scenes: arrows drive, B brake", 10, 102, 18, rl.Gray)
 		rl.EndDrawing()
 	}
 }

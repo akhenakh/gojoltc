@@ -9,6 +9,7 @@ package joltc
 import "C"
 
 import (
+	"math"
 	"unsafe"
 
 	"github.com/akhenakh/gojoltc/internal/vecmath"
@@ -49,13 +50,20 @@ func MeshShapeSettingsFromVertices(vertices []vecmath.Vec3, triangles []IndexedT
 
 // NewHeightFieldShapeSettings creates a height field shape from a square sample
 // grid (len(samples) must be n*n) with the given offset and scale.
+//
+// Note: joltc's sampleCount parameter is the number of samples *per side* (n),
+// not the total; passing the total makes Jolt read past the array.
 func NewHeightFieldShapeSettings(samples []float32, offset, scale vecmath.Vec3) *Shape {
 	if len(samples) == 0 {
+		return nil
+	}
+	n := int(math.Sqrt(float64(len(samples))))
+	if n*n != len(samples) {
 		return nil
 	}
 	off := vec3ToC(offset)
 	sc := vec3ToC(scale)
 	settings := C.JPH_HeightFieldShapeSettings_Create(
-		(*C.float)(unsafe.Pointer(&samples[0])), &off, &sc, C.uint32_t(len(samples)), nil)
+		(*C.float)(unsafe.Pointer(&samples[0])), &off, &sc, C.uint32_t(n), nil)
 	return &Shape{ptr: (*C.JPH_Shape)(unsafe.Pointer(C.JPH_HeightFieldShapeSettings_CreateShape(settings)))}
 }

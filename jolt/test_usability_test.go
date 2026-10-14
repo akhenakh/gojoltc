@@ -56,7 +56,7 @@ func TestBodyInterfaceExtras(t *testing.T) {
 	}
 }
 
-func joltRVec3(x, y, z float32) RVec3 { return RVec3{x, y, z} }
+func joltRVec3(x, y, z Real) RVec3 { return RVec3{x, y, z} }
 
 func TestPhysicsMaterial(t *testing.T) {
 	initShapes(t)

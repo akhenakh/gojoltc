@@ -73,7 +73,7 @@ func TestConstraintsPluralAddRemove(t *testing.T) {
 	// A chain: anchor -> b1 -> b2, held by two fixed constraints added at once.
 	ids := make([]BodyID, 3)
 	for i := range 3 {
-		pos := RVec3{float32(i) * 1.5, 5, 0}
+		pos := RVec3{Real(i) * 1.5, 5, 0}
 		motion := MotionTypeDynamic
 		if i == 0 {
 			motion = MotionTypeStatic
