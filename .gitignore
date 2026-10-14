@@ -13,6 +13,10 @@
 *.dylib
 *.dll
 
+# Example/viewer binaries (separate modules under cmd/)
+/cmd/example/example
+/cmd/joltviewer/joltviewer
+
 # CMake
 CMakeCache.txt
 CMakeFiles/

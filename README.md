@@ -86,6 +86,25 @@ allocations via `PositionsInto` (one cgo crossing for the whole sweep), versus
 ~49µs with 1024 allocations via the per-call `Position`; `Update` with 512
 bodies is allocation-free.
 
+## Examples
+
+- `examples/helloworld` — console port of joltc's `samples/01_HelloWorld`.
+- `cmd/example` — the same scene rendered with
+  [raylib-go](https://github.com/gen2brain/raylib-go), driving a character with
+  WASD and drawing Jolt's debug geometry.
+- `cmd/joltviewer` — a JoltViewer-style viewer: orbit camera, pause/step,
+  wireframe toggle and switchable scenes (pyramid, sphere drop, soft-body cloth).
+
+`cmd/example` and `cmd/joltviewer` are **separate Go modules** (each with its own
+`go.mod` and a `replace` to the parent) so the library does not pull in raylib:
+
+```sh
+cd cmd/example && go run .
+cd cmd/joltviewer && go run .
+```
+
+They need an OpenGL/X11 (or Wayland) toolchain to build raylib.
+
 ## Precision
 
 The default build is single precision. Building with `-tags jolt_double` switches
