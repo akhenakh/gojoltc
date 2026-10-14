@@ -323,3 +323,10 @@ func (s *WheeledVehicleControllerSettings) SetEngine(e VehicleEngineSettings) {
 	c := engineToC(e)
 	C.JPH_WheeledVehicleControllerSettings_SetEngine(s.ptr, &c)
 }
+
+// AddDifferential connects a pair of wheels (indexes into the vehicle's wheel
+// list) through a differential driven by the engine. Without at least one
+// differential no engine torque reaches any wheel.
+func (s *WheeledVehicleControllerSettings) AddDifferential(leftWheel, rightWheel int) {
+	C.JPH_WheeledVehicleControllerSettings_AddDifferential(s.ptr, C.int(leftWheel), C.int(rightWheel))
+}

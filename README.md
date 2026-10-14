@@ -10,14 +10,20 @@ the resulting Go binary has no runtime Jolt dependency.
 
 ## Status
 
-The full joltc C API surface exercised by the upstream test suite is wrapped:
-engine lifetimes, job system, layer filters, physics system, bodies, all shape
-types and settings, constraints, broad/narrow phase queries, characters,
-vehicles, skeletons and ragdolls. All 188 upstream joltc test cases are ported
-to Go and passing (`make test`).
+The API surface exercised by the upstream joltc test suite is wrapped, and a
+usability pass makes it actually usable in games:
 
-Not yet wrapped: contact/activation/step listeners, debug renderer, soft bodies,
-and the long tail of accessors with no upstream test. See `.operator/plans/implementation.md`.
+- **Constraints** can be attached to a world (`AddConstraint`/`RemoveConstraint`).
+- **Wheeled vehicles** drive: chassis + `NewWheelSettingsWV` wheels + a controller
+  (with at least one differential), added as both a constraint and a step listener.
+- **Mesh and height-field** shapes for level and terrain geometry.
+- **Listeners** (contact/activation/step) and a **debug renderer**.
+- **Soft bodies**, characters, skeletons/ragdolls.
+- The gameplay slice of `BodyInterface` (transforms, layers, user data, kinematic
+  moves, torque/forces) and `PhysicsMaterial`.
+
+Not wrapped: `CharacterVirtual` (the rigid `Character` covers this today) and the
+remaining composite functions — see `docs/coverage.md`. See `.operator/plans/implementation.md`.
 
 ## Requirements
 

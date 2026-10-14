@@ -372,6 +372,39 @@ func NewSoftBodyCreationSettingsFor(shared *SoftBodySharedSettings, position vec
 	return nil
 }
 
+// PhysicsMaterial assigns friction/restitution/color to a shape.
+type PhysicsMaterial struct{}
+
+// NewPhysicsMaterial returns nil in a cgo-less build.
+func NewPhysicsMaterial(name string, color vecmath.Color) *PhysicsMaterial { return nil }
+
+// VehicleConstraint is a vehicle: a chassis body with wheels and a controller.
+type VehicleConstraint struct{}
+
+// WheeledVehicleController drives a wheeled vehicle.
+type WheeledVehicleController struct{}
+
+// NewWheelSettingsWV returns nil in a cgo-less build.
+func NewWheelSettingsWV() *WheelSettings { return nil }
+
+// NewVehicleConstraint returns nil in a cgo-less build.
+func NewVehicleConstraint(body *Body, settings *VehicleConstraintSettings, wheels []*WheelSettings, controller *WheeledVehicleControllerSettings) *VehicleConstraint {
+	return nil
+}
+
+// NewMeshShapeSettings returns nil in a cgo-less build.
+func NewMeshShapeSettings(triangles []Triangle) *Shape { return nil }
+
+// MeshShapeSettingsFromVertices returns nil in a cgo-less build.
+func MeshShapeSettingsFromVertices(vertices []vecmath.Vec3, triangles []IndexedTriangle) *Shape {
+	return nil
+}
+
+// NewHeightFieldShapeSettings returns nil in a cgo-less build.
+func NewHeightFieldShapeSettings(samples []float32, offset, scale vecmath.Vec3) *Shape {
+	return nil
+}
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 

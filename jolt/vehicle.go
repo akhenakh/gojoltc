@@ -22,6 +22,10 @@ type (
 	VehicleAntiRollBar = joltc.VehicleAntiRollBar
 	// VehicleConstraintSettings mirrors JPH_VehicleConstraintSettings.
 	VehicleConstraintSettings = joltc.VehicleConstraintSettings
+	// VehicleConstraint is a vehicle: a chassis body with wheels and a controller.
+	VehicleConstraint = joltc.VehicleConstraint
+	// WheeledVehicleController drives a wheeled vehicle.
+	WheeledVehicleController = joltc.WheeledVehicleController
 )
 
 // NewWheelSettings creates wheel settings with defaults.
@@ -59,6 +63,14 @@ func NewVehicleAntiRollBar() VehicleAntiRollBar { return joltc.NewVehicleAntiRol
 // NewVehicleConstraintSettings returns vehicle constraint settings with defaults.
 func NewVehicleConstraintSettings() VehicleConstraintSettings {
 	return joltc.NewVehicleConstraintSettings()
+}
+
+// NewWheelSettingsWV creates wheel settings for a wheeled vehicle.
+func NewWheelSettingsWV() *WheelSettings { return joltc.NewWheelSettingsWV() }
+
+// NewVehicleConstraint creates a vehicle constraint for a chassis body.
+func NewVehicleConstraint(body *Body, settings *VehicleConstraintSettings, wheels []*WheelSettings, controller *WheeledVehicleControllerSettings) *VehicleConstraint {
+	return joltc.NewVehicleConstraint(body, settings, wheels, controller)
 }
 
 // NewVehicleTransmissionSettings creates transmission settings with defaults.

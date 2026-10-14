@@ -310,20 +310,15 @@ func emit(d decl) (code, reason string) {
 	if len(parts) != 2 {
 		return "", "no type prefix"
 	}
-	cType, method := parts[0], parts[1]
-	cType = "JPH_" + cType
+	cType := "JPH_" + parts[0]
 	recv, ok := goReceiver[cType]
 	if !ok {
 		return "", "no Go receiver for " + cType
 	}
-
-	// First parameter must be the receiver pointer.
 	if len(d.params) == 0 || !d.params[0].ptr || d.params[0].base() != cType {
 		return "", "unexpected receiver"
 	}
-	rest := d.params[1:]
-
-	goName := methodName(method)
+	goName := methodName(parts[1])
 	if goName == "" {
 		return "", "unnamed method"
 	}
@@ -331,49 +326,63 @@ func emit(d decl) (code, reason string) {
 	// JPH_Character vs JPH_CharacterBase); reinterpret the receiver pointer.
 	rExpr := fmt.Sprintf("(*C.%s)(unsafe.Pointer(r.ptr))", cType)
 
-	// Case 1: setter -- void NAME(recv, T value) or void NAME(recv, const T* value)
-	if d.ret.base() == "void" && !d.ret.cst && !d.ret.ptr && len(rest) == 1 {
-		arg := rest[0]
+	// Optional leading handle id (BodyInterface and friends take one).
+	rem := d.params[1:]
+	idDecl, idArgs := "", ""
+	if len(rem) > 0 && !rem[0].ptr {
+		if gt, ok := enums[rem[0].base()]; ok && (rem[0].base() == "JPH_BodyID" || rem[0].base() == "JPH_CharacterID") {
+			idDecl = "id " + gt + ", "
+			idArgs = fmt.Sprintf("C.%s(id)", rem[0].base())
+			rem = rem[1:]
+		}
+	}
+
+	isVoid := d.ret.base() == "void" && !d.ret.cst && !d.ret.ptr
+
+	// Setter: void NAME(recv, [id,] T value) or const T* value.
+	if isVoid && len(rem) == 1 {
+		arg := rem[0]
 		if gt, ok := scalar[arg.base()]; ok && !arg.ptr {
-			return setter(recv, goName, d.name, rExpr, arg.base(), gt.goType), ""
+			return setter(recv, goName, d.name, rExpr, idDecl, idArgs, arg.base(), gt.goType), ""
 		}
 		if arg.ptr && arg.cst {
 			if gt, ok := vectors[arg.base()]; ok {
-				return vecSetter(recv, goName, d.name, rExpr, gt), ""
+				return vecSetter(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
 			}
 		}
 		if gt, ok := enums[arg.base()]; ok && !arg.ptr {
-			return setter(recv, goName, d.name, rExpr, arg.base(), gt), ""
-		}
-		// Fall through: a non-const pointer argument is an out-parameter.
-	}
-
-	// Case 2: scalar/enum/vector return -- T NAME(recv)
-	if len(rest) == 0 && !d.ret.ptr {
-		if gt, ok := scalar[d.ret.base()]; ok {
-			return retScalar(recv, goName, d.name, rExpr, gt.goType, gt.conv), ""
-		}
-		if gt, ok := enums[d.ret.base()]; ok {
-			return retEnum(recv, goName, d.name, rExpr, gt), ""
-		}
-	}
-	if len(rest) == 0 && d.ret.ptr && d.ret.cst {
-		if gt, ok := vectors[d.ret.base()]; ok {
-			return retVec(recv, goName, d.name, rExpr, gt), ""
+			return setter(recv, goName, d.name, rExpr, idDecl, idArgs, arg.base(), gt), ""
 		}
 	}
 
-	// Case 3: out-parameter -- void NAME(recv, T* result)
-	if d.ret.base() == "void" && len(rest) == 1 && rest[0].ptr && !rest[0].cst {
-		out := rest[0].base()
+	// Value return: T NAME(recv, [id]).
+	if !d.ret.ptr {
+		if len(rem) == 0 {
+			if gt, ok := scalar[d.ret.base()]; ok {
+				return retScalar(recv, goName, d.name, rExpr, idDecl, idArgs, gt.goType, gt.conv), ""
+			}
+			if gt, ok := enums[d.ret.base()]; ok {
+				return retEnum(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
+			}
+		}
+		if len(rem) == 0 && d.ret.cst {
+			if gt, ok := vectors[d.ret.base()]; ok {
+				return retVec(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
+			}
+		}
+	}
+
+	// Out-parameter: void NAME(recv, [id,] T* out).
+	if isVoid && len(rem) == 1 && rem[0].ptr && !rem[0].cst {
+		out := rem[0].base()
 		if gt, ok := scalar[out]; ok {
-			return outScalar(recv, goName, d.name, rExpr, gt.goType, gt.conv), ""
+			return outScalar(recv, goName, d.name, rExpr, idDecl, idArgs, gt.goType, gt.conv), ""
 		}
 		if gt, ok := enums[out]; ok {
-			return outEnum(recv, goName, d.name, rExpr, gt), ""
+			return outEnum(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
 		}
 		if gt, ok := vectors[out]; ok {
-			return outVec(recv, goName, d.name, rExpr, gt), ""
+			return outVec(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
 		}
 	}
 	return "", "unsupported shape"
@@ -387,44 +396,55 @@ func methodName(m string) string {
 	return m
 }
 
-func setter(recv, goName, cName, rExpr, cArg, goType string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(value %s) {\n\tC.%s(%s, C.%s(value))\n}\n\n",
-		goName, cName, recv, goName, goType, cName, rExpr, cArg)
+// joinArgs joins the non-empty parts of a C argument list.
+func joinArgs(parts ...string) string {
+	var out []string
+	for _, p := range parts {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return strings.Join(out, ", ")
 }
 
-func vecSetter(recv, goName, cName, rExpr, goType string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(value %s) {\n\tc := %s(value)\n\tC.%s(%s, &c)\n}\n\n",
-		goName, cName, recv, goName, goType, cArgs[goType], cName, rExpr)
+func setter(recv, goName, cName, rExpr, idDecl, idArgs, cArg, goType string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%svalue %s) {\n\tC.%s(%s)\n}\n\n",
+		goName, cName, recv, goName, idDecl, goType, cName, joinArgs(rExpr, idArgs, fmt.Sprintf("C.%s(value)", cArg)))
 }
 
-func retScalar(recv, goName, cName, rExpr, goType, conv string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s() %s {\n\treturn %s(C.%s(%s))\n}\n\n",
-		goName, cName, recv, goName, goType, conv, cName, rExpr)
+func vecSetter(recv, goName, cName, rExpr, idDecl, idArgs, goType string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%svalue %s) {\n\tc := %s(value)\n\tC.%s(%s)\n}\n\n",
+		goName, cName, recv, goName, idDecl, goType, cArgs[goType], cName, joinArgs(rExpr, idArgs, "&c"))
 }
 
-func retEnum(recv, goName, cName, rExpr, goType string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s() %s {\n\treturn %s(C.%s(%s))\n}\n\n",
-		goName, cName, recv, goName, goType, goType, cName, rExpr)
+func retScalar(recv, goName, cName, rExpr, idDecl, idArgs, goType, conv string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%s) %s {\n\treturn %s(C.%s(%s))\n}\n\n",
+		goName, cName, recv, goName, strings.TrimSuffix(idDecl, ", "), goType, conv, cName, joinArgs(rExpr, idArgs))
 }
 
-func retVec(recv, goName, cName, rExpr, goType string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s() %s {\n\tc := C.%s(%s)\n\treturn %s(*c)\n}\n\n",
-		goName, cName, recv, goName, goType, cName, rExpr, cFrom[goType])
+func retEnum(recv, goName, cName, rExpr, idDecl, idArgs, goType string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%s) %s {\n\treturn %s(C.%s(%s))\n}\n\n",
+		goName, cName, recv, goName, strings.TrimSuffix(idDecl, ", "), goType, goType, cName, joinArgs(rExpr, idArgs))
 }
 
-func outScalar(recv, goName, cName, rExpr, goType, conv string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s() %s {\n\tvar out C.%s\n\tC.%s(%s, &out)\n\treturn %s(out)\n}\n\n",
-		goName, cName, recv, goName, goType, cScalar(goType), cName, rExpr, conv)
+func retVec(recv, goName, cName, rExpr, idDecl, idArgs, goType string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%s) %s {\n\tc := C.%s(%s)\n\treturn %s(*c)\n}\n\n",
+		goName, cName, recv, goName, strings.TrimSuffix(idDecl, ", "), goType, cName, joinArgs(rExpr, idArgs), cFrom[goType])
 }
 
-func outEnum(recv, goName, cName, rExpr, goType string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s() %s {\n\tvar out C.%s\n\tC.%s(%s, &out)\n\treturn %s(out)\n}\n\n",
-		goName, cName, recv, goName, goType, cType(goType), cName, rExpr, goType)
+func outScalar(recv, goName, cName, rExpr, idDecl, idArgs, goType, conv string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%s) %s {\n\tvar out C.%s\n\tC.%s(%s)\n\treturn %s(out)\n}\n\n",
+		goName, cName, recv, goName, strings.TrimSuffix(idDecl, ", "), goType, cScalar(goType), cName, joinArgs(rExpr, idArgs, "&out"), conv)
 }
 
-func outVec(recv, goName, cName, rExpr, goType string) string {
-	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s() %s {\n\tvar out C.%s\n\tC.%s(%s, &out)\n\treturn %s(out)\n}\n\n",
-		goName, cName, recv, goName, goType, cType(goType), cName, rExpr, cFrom[goType])
+func outEnum(recv, goName, cName, rExpr, idDecl, idArgs, goType string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%s) %s {\n\tvar out C.%s\n\tC.%s(%s)\n\treturn %s(out)\n}\n\n",
+		goName, cName, recv, goName, strings.TrimSuffix(idDecl, ", "), goType, cType(goType), cName, joinArgs(rExpr, idArgs, "&out"), goType)
+}
+
+func outVec(recv, goName, cName, rExpr, idDecl, idArgs, goType string) string {
+	return fmt.Sprintf("// %s wraps %s.\nfunc (r *%s) %s(%s) %s {\n\tvar out C.%s\n\tC.%s(%s)\n\treturn %s(out)\n}\n\n",
+		goName, cName, recv, goName, strings.TrimSuffix(idDecl, ", "), goType, cType(goType), cName, joinArgs(rExpr, idArgs, "&out"), cFrom[goType])
 }
 
 func cType(goType string) string {

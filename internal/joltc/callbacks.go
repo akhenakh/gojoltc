@@ -247,6 +247,9 @@ func goJoltcBodyDeactivated(userData unsafe.Pointer, id C.JPH_BodyID, bodyUserDa
 type StepListener struct {
 	ptr    *C.JPH_PhysicsStepListener
 	handle cgo.Handle
+	// owned is false for listeners owned by another object (e.g. a vehicle),
+	// which must not be destroyed here.
+	owned bool
 }
 
 var stepProcsOnce sync.Once
@@ -255,16 +258,19 @@ var stepProcsOnce sync.Once
 func NewStepListener(cb *StepListenerCallbacks) *StepListener {
 	stepProcsOnce.Do(func() { C.joltcInstallStepProcs() })
 	h := cgo.NewHandle(cb)
-	return &StepListener{ptr: C.JPH_PhysicsStepListener_Create(C.joltc_voidp(C.uintptr_t(h))), handle: h}
+	return &StepListener{ptr: C.JPH_PhysicsStepListener_Create(C.joltc_voidp(C.uintptr_t(h))), handle: h, owned: true}
 }
 
-// Destroy releases the listener.
+// Destroy releases the listener, unless it is owned by another object.
 func (l *StepListener) Destroy() {
-	if l.ptr != nil {
+	if l.ptr == nil {
+		return
+	}
+	if l.owned {
 		C.JPH_PhysicsStepListener_Destroy(l.ptr)
-		l.ptr = nil
 		l.handle.Delete()
 	}
+	l.ptr = nil
 }
 
 //export goJoltcStep

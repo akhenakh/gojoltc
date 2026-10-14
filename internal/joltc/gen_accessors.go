@@ -304,6 +304,13 @@ func (r *Constraint) SetNumPositionStepsOverride(value uint32) {
 	C.JPH_Constraint_SetNumPositionStepsOverride((*C.JPH_Constraint)(unsafe.Pointer(r.ptr)), C.uint32_t(value))
 }
 
+// NotifyShapeChanged wraps JPH_Constraint_NotifyShapeChanged.
+func (r *Constraint) NotifyShapeChanged(id BodyID) vecmath.Vec3 {
+	var out C.JPH_Vec3
+	C.JPH_Constraint_NotifyShapeChanged((*C.JPH_Constraint)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return vec3FromC(out)
+}
+
 // IsActive wraps JPH_Constraint_IsActive.
 func (r *Constraint) IsActive() bool {
 	return bool(C.JPH_Constraint_IsActive((*C.JPH_Constraint)(unsafe.Pointer(r.ptr))))
@@ -319,14 +326,111 @@ func (r *Constraint) WarmStartVelocityConstraint(value float32) {
 	C.JPH_Constraint_WarmStartVelocityConstraint((*C.JPH_Constraint)(unsafe.Pointer(r.ptr)), C.float(value))
 }
 
-// ResetSleepTimer wraps JPH_BodyInterface_ResetSleepTimer.
-func (r *BodyInterface) ResetSleepTimer(value BodyID) {
-	C.JPH_BodyInterface_ResetSleepTimer((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(value))
+// BodyType wraps JPH_BodyInterface_GetBodyType.
+func (r *BodyInterface) BodyType(id BodyID) BodyType {
+	return BodyType(C.JPH_BodyInterface_GetBodyType((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
 }
 
-// InvalidateContactCache wraps JPH_BodyInterface_InvalidateContactCache.
-func (r *BodyInterface) InvalidateContactCache(value BodyID) {
-	C.JPH_BodyInterface_InvalidateContactCache((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(value))
+// ObjectLayer wraps JPH_BodyInterface_GetObjectLayer.
+func (r *BodyInterface) ObjectLayer(id BodyID) ObjectLayer {
+	return ObjectLayer(C.JPH_BodyInterface_GetObjectLayer((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
+}
+
+// SetObjectLayer wraps JPH_BodyInterface_SetObjectLayer.
+func (r *BodyInterface) SetObjectLayer(id BodyID, value ObjectLayer) {
+	C.JPH_BodyInterface_SetObjectLayer((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), C.JPH_ObjectLayer(value))
+}
+
+// WorldTransform wraps JPH_BodyInterface_GetWorldTransform.
+func (r *BodyInterface) WorldTransform(id BodyID) vecmath.RMat4 {
+	var out C.JPH_RMat4
+	C.JPH_BodyInterface_GetWorldTransform((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return rmat4FromC(out)
+}
+
+// CenterOfMassTransform wraps JPH_BodyInterface_GetCenterOfMassTransform.
+func (r *BodyInterface) CenterOfMassTransform(id BodyID) vecmath.RMat4 {
+	var out C.JPH_RMat4
+	C.JPH_BodyInterface_GetCenterOfMassTransform((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return rmat4FromC(out)
+}
+
+// AddLinearVelocity wraps JPH_BodyInterface_AddLinearVelocity.
+func (r *BodyInterface) AddLinearVelocity(id BodyID) vecmath.Vec3 {
+	var out C.JPH_Vec3
+	C.JPH_BodyInterface_AddLinearVelocity((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return vec3FromC(out)
+}
+
+// AddTorque wraps JPH_BodyInterface_AddTorque.
+func (r *BodyInterface) AddTorque(id BodyID) vecmath.Vec3 {
+	var out C.JPH_Vec3
+	C.JPH_BodyInterface_AddTorque((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return vec3FromC(out)
+}
+
+// AddAngularImpulse wraps JPH_BodyInterface_AddAngularImpulse.
+func (r *BodyInterface) AddAngularImpulse(id BodyID) vecmath.Vec3 {
+	var out C.JPH_Vec3
+	C.JPH_BodyInterface_AddAngularImpulse((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return vec3FromC(out)
+}
+
+// SetMotionQuality wraps JPH_BodyInterface_SetMotionQuality.
+func (r *BodyInterface) SetMotionQuality(id BodyID, value MotionQuality) {
+	C.JPH_BodyInterface_SetMotionQuality((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), C.JPH_MotionQuality(value))
+}
+
+// MotionQuality wraps JPH_BodyInterface_GetMotionQuality.
+func (r *BodyInterface) MotionQuality(id BodyID) MotionQuality {
+	return MotionQuality(C.JPH_BodyInterface_GetMotionQuality((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
+}
+
+// InverseInertia wraps JPH_BodyInterface_GetInverseInertia.
+func (r *BodyInterface) InverseInertia(id BodyID) vecmath.Mat4 {
+	var out C.JPH_Mat4
+	C.JPH_BodyInterface_GetInverseInertia((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
+	return mat4FromC(out)
+}
+
+// SetGravityFactor wraps JPH_BodyInterface_SetGravityFactor.
+func (r *BodyInterface) SetGravityFactor(id BodyID, value float32) {
+	C.JPH_BodyInterface_SetGravityFactor((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), C.float(value))
+}
+
+// GravityFactor wraps JPH_BodyInterface_GetGravityFactor.
+func (r *BodyInterface) GravityFactor(id BodyID) float32 {
+	return float32(C.JPH_BodyInterface_GetGravityFactor((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
+}
+
+// SetUseManifoldReduction wraps JPH_BodyInterface_SetUseManifoldReduction.
+func (r *BodyInterface) SetUseManifoldReduction(id BodyID, value bool) {
+	C.JPH_BodyInterface_SetUseManifoldReduction((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), C.bool(value))
+}
+
+// UseManifoldReduction wraps JPH_BodyInterface_GetUseManifoldReduction.
+func (r *BodyInterface) UseManifoldReduction(id BodyID) bool {
+	return bool(C.JPH_BodyInterface_GetUseManifoldReduction((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
+}
+
+// SetUserData wraps JPH_BodyInterface_SetUserData.
+func (r *BodyInterface) SetUserData(id BodyID, value uint64) {
+	C.JPH_BodyInterface_SetUserData((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), C.uint64_t(value))
+}
+
+// UserData wraps JPH_BodyInterface_GetUserData.
+func (r *BodyInterface) UserData(id BodyID) uint64 {
+	return uint64(C.JPH_BodyInterface_GetUserData((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
+}
+
+// SetIsSensor wraps JPH_BodyInterface_SetIsSensor.
+func (r *BodyInterface) SetIsSensor(id BodyID, value bool) {
+	C.JPH_BodyInterface_SetIsSensor((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), C.bool(value))
+}
+
+// IsSensor wraps JPH_BodyInterface_IsSensor.
+func (r *BodyInterface) IsSensor(id BodyID) bool {
+	return bool(C.JPH_BodyInterface_IsSensor((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id)))
 }
 
 // BodyType wraps JPH_Body_GetBodyType.
