@@ -222,6 +222,53 @@ func NewSixDOFConstraintSettings() *SixDOFConstraintSettings { return nil }
 // NewGearConstraintSettings returns nil in a cgo-less build.
 func NewGearConstraintSettings() *GearConstraintSettings { return nil }
 
+// CharacterSettings holds settings for a character.
+type CharacterSettings struct{}
+
+// Character is a rigid-body character.
+type Character struct{}
+
+// CharacterVirtualSettings holds settings for a virtual character.
+type CharacterVirtualSettings struct{}
+
+// NewCharacterSettings returns nil in a cgo-less build.
+func NewCharacterSettings() *CharacterSettings { return nil }
+
+// NewCharacterVirtualSettings returns nil in a cgo-less build.
+func NewCharacterVirtualSettings() *CharacterVirtualSettings { return nil }
+
+// NewCharacter returns nil in a cgo-less build.
+func NewCharacter(settings *CharacterSettings, position vecmath.RVec3, rotation vecmath.Quat, userData uint64, system *PhysicsSystem) *Character {
+	return nil
+}
+
+// Skeleton is a hierarchy of joints.
+type Skeleton struct{}
+
+// SkeletonPose is a pose for a skeleton.
+type SkeletonPose struct{}
+
+// SkeletonMapper maps poses between two skeletons.
+type SkeletonMapper struct{}
+
+// RagdollSettings holds settings for a ragdoll.
+type RagdollSettings struct{}
+
+// Ragdoll is a physics-driven skeleton.
+type Ragdoll struct{}
+
+// NewSkeleton returns nil in a cgo-less build.
+func NewSkeleton() *Skeleton { return nil }
+
+// NewSkeletonPose returns nil in a cgo-less build.
+func NewSkeletonPose() *SkeletonPose { return nil }
+
+// NewSkeletonMapper returns nil in a cgo-less build.
+func NewSkeletonMapper() *SkeletonMapper { return nil }
+
+// NewRagdollSettings returns nil in a cgo-less build.
+func NewRagdollSettings() *RagdollSettings { return nil }
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 
