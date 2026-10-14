@@ -13,9 +13,11 @@
 *.dylib
 *.dll
 
-# Example/viewer binaries (separate modules under cmd/)
-/cmd/example/example
-/cmd/joltviewer/joltviewer
+# Built command binaries (extension-less, named after the command; add new ones)
+/helloworld
+/cmd/*/example
+/cmd/*/joltviewer
+/cmd/*/rover
 
 # CMake
 CMakeCache.txt
