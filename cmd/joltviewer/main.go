@@ -15,12 +15,11 @@
 //	Space      pause/resume
 //	Right      single step
 //	F          wireframe / solid
+//	P          save a screenshot (joltviewer.png)
 //	Esc        quit
 package main
 
 import (
-	"fmt"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 
 	"github.com/akhenakh/gojoltc/jolt"
@@ -322,6 +321,9 @@ func main() {
 		if rl.IsKeyPressed(rl.KeyF) {
 			wireframe = !wireframe
 		}
+		if rl.IsKeyPressed(rl.KeyP) {
+			rl.TakeScreenshot("joltviewer.png")
+		}
 
 		if drive != nil {
 			drive()
@@ -358,15 +360,7 @@ func main() {
 		rl.DrawGrid(50, 1)
 		rl.EndMode3D()
 
-		rl.DrawRectangle(0, 0, 420, 108, rl.NewColor(255, 255, 255, 200))
-		rl.DrawText(fmt.Sprintf("scene: %s", sceneNames[scene%len(sceneNames)]), 10, 8, 20, rl.DarkGray)
-		rl.DrawText(fmt.Sprintf("bodies: %d   frames/s: %d", w.system.NumBodies(), rl.GetFPS()), 10, 32, 20, rl.DarkGray)
-		if paused {
-			rl.DrawText("PAUSED", 10, 56, 20, rl.Red)
-		}
-		rl.DrawText("N next  R reset  Space pause  Right step  F wireframe", 10, 80, 18, rl.Gray)
-		rl.DrawText("drag a mouse button to orbit, wheel to zoom", 10, 102, 18, rl.Gray)
-		rl.DrawText("vehicle scenes: arrows drive, B brake", 10, 102, 18, rl.Gray)
+		drawHUD(hudRows(sceneNames[scene%len(sceneNames)], int(w.system.NumBodies()), paused, drive != nil))
 		rl.EndDrawing()
 	}
 }
