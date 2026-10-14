@@ -15,7 +15,10 @@ usability pass makes it actually usable in games:
 
 - **Constraints** can be attached to a world (`AddConstraint`/`RemoveConstraint`).
 - **Wheeled vehicles** drive: chassis + `NewWheelSettingsWV` wheels + a controller
-  (with at least one differential), added as both a constraint and a step listener.
+  (with at least one differential), added as both a constraint and a step listener,
+  with **tire friction curves** (`LinearCurve`) for surface-dependent slip.
+- **Actuated joints**: runtime motors for hinge (target angle), slider (target
+  position/velocity) and six-DOF (per-axis state, targets, friction).
 - **Mesh and height-field** shapes for level and terrain geometry.
 - **Sensing queries**: filtered raycasts (closest hit and all hits), point and
   shape overlap (with proximity volumes), and shape sweeps —

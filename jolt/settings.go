@@ -10,6 +10,12 @@ type (
 	CollisionGroup = joltc.CollisionGroup
 	// GroupFilter decides whether two collision groups may collide.
 	GroupFilter = joltc.GroupFilter
+	// SpringSettings configures a constraint spring.
+	SpringSettings = joltc.SpringSettings
+	// MotorSettings configures a constraint motor.
+	MotorSettings = joltc.MotorSettings
+	// LinearCurve is a piecewise-linear function (wheel friction curves).
+	LinearCurve = joltc.LinearCurve
 )
 
 // NewGroupFilterTable creates a group filter table with numSubGroups sub-groups
@@ -22,6 +28,16 @@ func NewGroupFilterTable(numSubGroups uint32) *GroupFilter {
 func NewPlaneShapeWithMaterial(plane Plane, material *PhysicsMaterial, halfExtent float32) *Shape {
 	return joltc.NewPlaneShapeWithMaterial(plane, material, halfExtent)
 }
+
+// DefaultSpringSettings returns Jolt's spring defaults.
+func DefaultSpringSettings() SpringSettings { return joltc.DefaultSpringSettings() }
+
+// DefaultMotorSettings returns Jolt's motor defaults (a 2 Hz spring with
+// unlimited force and torque).
+func DefaultMotorSettings() MotorSettings { return joltc.DefaultMotorSettings() }
+
+// NewLinearCurve creates an empty piecewise-linear curve.
+func NewLinearCurve() *LinearCurve { return joltc.NewLinearCurve() }
 
 // NewTaperedCylinderShapeSettingsWithMaterial creates tapered cylinder settings
 // with a physics material.

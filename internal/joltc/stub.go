@@ -445,6 +445,12 @@ func NewBodyFilter(cb *BodyFilterCallbacks) *BodyFilter { return nil }
 // NewShapeFilter returns nil in a cgo-less build.
 func NewShapeFilter(cb *ShapeFilterCallbacks) *ShapeFilter { return nil }
 
+// LinearCurve is a piecewise-linear function used for wheel friction curves.
+type LinearCurve struct{}
+
+// NewLinearCurve returns nil in a cgo-less build.
+func NewLinearCurve() *LinearCurve { return nil }
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 
