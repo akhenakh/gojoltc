@@ -355,13 +355,7 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	camera := rl.Camera3D{
-		Position:   rl.Vector3{X: -9, Y: 5, Z: 9},
-		Target:     rl.Vector3{X: 0, Y: 1, Z: 0},
-		Up:         rl.Vector3{X: 0, Y: 1, Z: 0},
-		Fovy:       45,
-		Projection: rl.CameraPerspective,
-	}
+	cam := newOrbitCamera(rl.Vector3{X: 0, Y: 1, Z: 0}, 2.4, 0.35, 16)
 
 	wireframe := true
 
@@ -392,13 +386,13 @@ func main() {
 		r.drive(forward, steer, brake)
 
 		system.Update(rl.GetFrameTime(), 1, jobSystem)
+		camera := cam.camera()
 
 		reading := r.scan(system, bi)
 		chassis := r.vehicle.VehicleBody()
 
 		geom.reset()
 		system.DrawBodies(jolt.DrawSettings{DrawShape: true, DrawShapeWireframe: wireframe}, renderer)
-		rl.UpdateCamera(&camera, rl.CameraOrbital)
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.NewColor(206, 222, 238, 255))
@@ -435,6 +429,7 @@ func main() {
 		rl.DrawText(fmt.Sprintf("clearance %.2f m%s", reading.groundDistance, mark(reading.groundHit)), 10, 56, 20, rl.DarkGray)
 		rl.DrawText(fmt.Sprintf("obstacle ahead %.2f m%s", reading.aheadDistance, mark(reading.aheadHit)), 10, 80, 20, rl.DarkGray)
 		rl.DrawText("WASD/arrows drive  Space brake  R respawn  F wireframe", 10, 106, 18, rl.Gray)
+		rl.DrawText("drag a mouse button to orbit, wheel to zoom", 10, 128, 18, rl.Gray)
 
 		rl.EndDrawing()
 	}

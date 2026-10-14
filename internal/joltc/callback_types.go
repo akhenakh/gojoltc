@@ -67,7 +67,18 @@ type DrawSettings struct {
 	DrawVelocity              bool
 	DrawMassAndInertia        bool
 	DrawSupportingFace        bool
-	DrawSoftBodyVertices      bool
+
+	// Soft bodies are NOT drawn via DrawShape: Jolt only draws them through the
+	// soft-body flags below, so a cloth is invisible without at least
+	// DrawSoftBodyVertices or DrawSoftBodyEdgeConstraints.
+	DrawSoftBodyVertices          bool
+	DrawSoftBodyVertexVelocities  bool
+	DrawSoftBodyEdgeConstraints   bool
+	DrawSoftBodyBendConstraints   bool
+	DrawSoftBodyVolumeConstraints bool
+	DrawSoftBodySkinConstraints   bool
+	DrawSoftBodyLRAConstraints    bool
+	DrawSoftBodyPredictedBounds   bool
 }
 
 // DefaultDrawSettings returns settings that draw all body shapes as wireframe.

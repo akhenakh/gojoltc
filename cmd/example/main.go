@@ -153,13 +153,7 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	camera := rl.Camera3D{
-		Position:   rl.Vector3{X: 12, Y: 8, Z: 12},
-		Target:     rl.Vector3{X: 0, Y: 1, Z: 0},
-		Up:         rl.Vector3{X: 0, Y: 1, Z: 0},
-		Fovy:       45,
-		Projection: rl.CameraPerspective,
-	}
+	cam := newOrbitCamera(rl.Vector3{X: 0, Y: 1, Z: 0}, 0.8, 0.5, 18)
 
 	wireframe := true
 	paused := false
@@ -196,7 +190,7 @@ func main() {
 		settings := jolt.DrawSettings{DrawShape: true, DrawShapeWireframe: wireframe}
 		system.DrawBodies(settings, renderer)
 
-		rl.UpdateCamera(&camera, rl.CameraOrbital)
+		camera := cam.camera()
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
@@ -216,7 +210,7 @@ func main() {
 
 		pos := character.Position(true)
 		rl.DrawText(fmt.Sprintf("character: (%.1f, %.1f, %.1f)", pos.X, pos.Y, pos.Z), 10, 10, 20, rl.DarkGray)
-		rl.DrawText("WASD move  Space pause  F wireframe  mouse orbit", 10, 34, 20, rl.Gray)
+		rl.DrawText("WASD move  Space pause  F wireframe  drag to orbit, wheel to zoom", 10, 34, 20, rl.Gray)
 
 		rl.EndDrawing()
 	}

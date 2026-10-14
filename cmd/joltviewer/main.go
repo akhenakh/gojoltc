@@ -157,9 +157,15 @@ func buildSoftCloth(bi *jolt.BodyInterface) {
 	vertices := make([]jolt.SoftVertex, 0, n*n)
 	for j := range n {
 		for i := range n {
+			// The first row is pinned (zero inverse mass), so the cloth hangs
+			// like a curtain instead of falling to the floor.
+			invMass := float32(1)
+			if j == 0 {
+				invMass = 0
+			}
 			vertices = append(vertices, jolt.SoftVertex{
 				Position: jolt.Vec3{float32(i)*0.25 - 1.5, 3, float32(j)*0.25 - 1.5},
-				InvMass:  1,
+				InvMass:  invMass,
 			})
 		}
 	}
@@ -286,13 +292,7 @@ func main() {
 	drive := buildScene(w.system, scene)
 	defer func() { w.destroy() }()
 
-	camera := rl.Camera3D{
-		Position:   rl.Vector3{X: 14, Y: 10, Z: 14},
-		Target:     rl.Vector3{X: 0, Y: 1, Z: 0},
-		Up:         rl.Vector3{X: 0, Y: 1, Z: 0},
-		Fovy:       45,
-		Projection: rl.CameraPerspective,
-	}
+	cam := newOrbitCamera(rl.Vector3{X: 0, Y: 1, Z: 0}, 0.8, 0.55, 22)
 
 	wireframe := true
 	paused := false
@@ -331,9 +331,17 @@ func main() {
 		}
 
 		geom.reset()
-		w.system.DrawBodies(jolt.DrawSettings{DrawShape: true, DrawShapeWireframe: wireframe}, renderer)
+		// Soft bodies are only drawn through the soft-body flags, so enable them
+		// or the cloth scene shows nothing.
+		w.system.DrawBodies(jolt.DrawSettings{
+			DrawShape:                   true,
+			DrawShapeWireframe:          wireframe,
+			DrawSoftBodyVertices:        true,
+			DrawSoftBodyEdgeConstraints: true,
+			DrawSoftBodyBendConstraints: true,
+		}, renderer)
 
-		rl.UpdateCamera(&camera, rl.CameraOrbital)
+		camera := cam.camera()
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
@@ -356,7 +364,8 @@ func main() {
 		if paused {
 			rl.DrawText("PAUSED", 10, 56, 20, rl.Red)
 		}
-		rl.DrawText("N next  R reset  Space pause  Right step  F wireframe  mouse orbit", 10, 80, 18, rl.Gray)
+		rl.DrawText("N next  R reset  Space pause  Right step  F wireframe", 10, 80, 18, rl.Gray)
+		rl.DrawText("drag a mouse button to orbit, wheel to zoom", 10, 102, 18, rl.Gray)
 		rl.DrawText("vehicle scenes: arrows drive, B brake", 10, 102, 18, rl.Gray)
 		rl.EndDrawing()
 	}

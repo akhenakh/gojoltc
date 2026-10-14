@@ -393,6 +393,13 @@ func (s DrawSettings) toC() C.JPH_DrawSettings {
 	c.drawMassAndInertia = C.bool(s.DrawMassAndInertia)
 	c.drawGetSupportingFace = C.bool(s.DrawSupportingFace)
 	c.drawSoftBodyVertices = C.bool(s.DrawSoftBodyVertices)
+	c.drawSoftBodyVertexVelocities = C.bool(s.DrawSoftBodyVertexVelocities)
+	c.drawSoftBodyEdgeConstraints = C.bool(s.DrawSoftBodyEdgeConstraints)
+	c.drawSoftBodyBendConstraints = C.bool(s.DrawSoftBodyBendConstraints)
+	c.drawSoftBodyVolumeConstraints = C.bool(s.DrawSoftBodyVolumeConstraints)
+	c.drawSoftBodySkinConstraints = C.bool(s.DrawSoftBodySkinConstraints)
+	c.drawSoftBodyLRAConstraints = C.bool(s.DrawSoftBodyLRAConstraints)
+	c.drawSoftBodyPredictedBounds = C.bool(s.DrawSoftBodyPredictedBounds)
 	return c
 }
 
