@@ -106,3 +106,97 @@ func NewCylinderShape(halfHeight, radius float32) *Shape { return nil }
 func NewBodyCreationSettings(shape *Shape, position vecmath.RVec3, rotation vecmath.Quat, motionType MotionType, layer ObjectLayer) *BodyCreationSettings {
 	return nil
 }
+
+// NewTriangleShape returns nil in a cgo-less build.
+func NewTriangleShape(v1, v2, v3 vecmath.Vec3, convexRadius float32) *Shape { return nil }
+
+// NewPlaneShape returns nil in a cgo-less build.
+func NewPlaneShape(plane vecmath.Plane, halfExtent float32) *Shape { return nil }
+
+// NewRotatedTranslatedShape returns nil in a cgo-less build.
+func NewRotatedTranslatedShape(position vecmath.Vec3, rotation vecmath.Quat, inner *Shape) *Shape {
+	return nil
+}
+
+// NewScaledShape returns nil in a cgo-less build.
+func NewScaledShape(inner *Shape, scale vecmath.Vec3) *Shape { return nil }
+
+// NewOffsetCenterOfMassShape returns nil in a cgo-less build.
+func NewOffsetCenterOfMassShape(offset vecmath.Vec3, inner *Shape) *Shape { return nil }
+
+// Shape settings handle types.
+
+// SphereShapeSettings holds settings for a sphere shape.
+type SphereShapeSettings struct{}
+
+// BoxShapeSettings holds settings for a box shape.
+type BoxShapeSettings struct{}
+
+// CapsuleShapeSettings holds settings for a capsule shape.
+type CapsuleShapeSettings struct{}
+
+// CylinderShapeSettings holds settings for a cylinder shape.
+type CylinderShapeSettings struct{}
+
+// TaperedCapsuleShapeSettings holds settings for a tapered capsule shape.
+type TaperedCapsuleShapeSettings struct{}
+
+// TaperedCylinderShapeSettings holds settings for a tapered cylinder shape.
+type TaperedCylinderShapeSettings struct{}
+
+// ConvexHullShapeSettings holds settings for a convex hull shape.
+type ConvexHullShapeSettings struct{}
+
+// CompoundShapeSettings is the base for compound shape settings.
+type CompoundShapeSettings struct{}
+
+// StaticCompoundShapeSettings holds settings for a static compound shape.
+type StaticCompoundShapeSettings struct{ CompoundShapeSettings }
+
+// MutableCompoundShapeSettings holds settings for a mutable compound shape.
+type MutableCompoundShapeSettings struct{ CompoundShapeSettings }
+
+// EmptyShapeSettings holds settings for an empty shape.
+type EmptyShapeSettings struct{}
+
+// NewSphereShapeSettings returns nil in a cgo-less build.
+func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
+
+// NewBoxShapeSettings returns nil in a cgo-less build.
+func NewBoxShapeSettings(halfExtent vecmath.Vec3, convexRadius float32) *BoxShapeSettings {
+	return nil
+}
+
+// NewCapsuleShapeSettings returns nil in a cgo-less build.
+func NewCapsuleShapeSettings(halfHeightOfCylinder, radius float32) *CapsuleShapeSettings {
+	return nil
+}
+
+// NewCylinderShapeSettings returns nil in a cgo-less build.
+func NewCylinderShapeSettings(halfHeight, radius, convexRadius float32) *CylinderShapeSettings {
+	return nil
+}
+
+// NewTaperedCapsuleShapeSettings returns nil in a cgo-less build.
+func NewTaperedCapsuleShapeSettings(halfHeightOfTaperedCylinder, topRadius, bottomRadius float32) *TaperedCapsuleShapeSettings {
+	return nil
+}
+
+// NewTaperedCylinderShapeSettings returns nil in a cgo-less build.
+func NewTaperedCylinderShapeSettings(halfHeightOfTaperedCylinder, topRadius, bottomRadius, convexRadius float32) *TaperedCylinderShapeSettings {
+	return nil
+}
+
+// NewConvexHullShapeSettings returns nil in a cgo-less build.
+func NewConvexHullShapeSettings(points []vecmath.Vec3, maxConvexRadius float32) *ConvexHullShapeSettings {
+	return nil
+}
+
+// NewStaticCompoundShapeSettings returns nil in a cgo-less build.
+func NewStaticCompoundShapeSettings() *StaticCompoundShapeSettings { return nil }
+
+// NewMutableCompoundShapeSettings returns nil in a cgo-less build.
+func NewMutableCompoundShapeSettings() *MutableCompoundShapeSettings { return nil }
+
+// NewEmptyShapeSettings returns nil in a cgo-less build.
+func NewEmptyShapeSettings(centerOfMass vecmath.Vec3) *EmptyShapeSettings { return nil }
