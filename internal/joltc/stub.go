@@ -159,6 +159,12 @@ type MutableCompoundShapeSettings struct{ CompoundShapeSettings }
 // EmptyShapeSettings holds settings for an empty shape.
 type EmptyShapeSettings struct{}
 
+// BroadPhaseQuery is a broad-phase collision query interface.
+type BroadPhaseQuery struct{}
+
+// NarrowPhaseQuery is a narrow-phase collision query interface.
+type NarrowPhaseQuery struct{}
+
 // NewSphereShapeSettings returns nil in a cgo-less build.
 func NewSphereShapeSettings(radius float32) *SphereShapeSettings { return nil }
 
