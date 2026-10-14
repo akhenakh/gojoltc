@@ -13,8 +13,8 @@ func newConstraintFixture(t *testing.T) (f *physicsFixture, body1, body2 *Body) 
 	bi := f.system.BodyInterface()
 
 	shape := NewSphereShape(0.5)
-	bs1 := NewBodyCreationSettings(shape, Vec3{0, 0, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
-	bs2 := NewBodyCreationSettings(shape, Vec3{2, 0, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	bs1 := NewBodyCreationSettings(shape, RVec3{0, 0, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	bs2 := NewBodyCreationSettings(shape, RVec3{2, 0, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 
 	body1 = bi.CreateBody(bs1)
 	body2 = bi.CreateBody(bs2)

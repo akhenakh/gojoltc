@@ -23,6 +23,15 @@ func equalFloat(t *testing.T, name string, got, want float32) {
 	}
 }
 
+// equalReal compares world-space scalars (float32 in single precision, float64
+// with the jolt_double build tag).
+func equalReal(t *testing.T, name string, got, want Real) {
+	t.Helper()
+	if got != want {
+		t.Errorf("%s: got %v, want %v", name, got, want)
+	}
+}
+
 func nearVec3(t *testing.T, name string, got, want Vec3) {
 	t.Helper()
 	nearFloat(t, name+".X", got.X, want.X)

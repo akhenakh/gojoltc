@@ -13,7 +13,7 @@ func TestBatchedBodyReads(t *testing.T) {
 	defer shape.Destroy()
 
 	for i := range 3 {
-		settings := NewBodyCreationSettings(shape, Vec3{float32(i), 1, 2}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		settings := NewBodyCreationSettings(shape, RVec3{Real(i), 1, 2}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 		id := bi.CreateAndAddBody(settings, ActivationActivate)
 		settings.Destroy()
 		t.Cleanup(func() { bi.RemoveAndDestroyBody(id) })

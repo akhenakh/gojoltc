@@ -37,7 +37,7 @@ func newBenchSystem(b *testing.B, numBodies int) (*PhysicsSystem, *JobSystem, []
 	shape := NewSphereShape(0.5)
 	ids := make([]BodyID, numBodies)
 	for i := range numBodies {
-		settings := NewBodyCreationSettings(shape, Vec3{float32(i % 64), 10, float32(i / 64)}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		settings := NewBodyCreationSettings(shape, RVec3{Real(i % 64), 10, Real(i / 64)}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 		ids[i] = bi.CreateAndAddBody(settings, ActivationActivate)
 		settings.Destroy()
 	}

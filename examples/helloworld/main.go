@@ -48,14 +48,14 @@ func main() {
 
 	// Floor.
 	floorShape := jolt.NewBoxShape(jolt.Vec3{100, 1, 100}, jolt.DefaultConvexRadius)
-	floorSettings := jolt.NewBodyCreationSettings(floorShape, jolt.Vec3{0, -1, 0}, jolt.QuatIdentity(), jolt.MotionTypeStatic, layerNonMoving)
+	floorSettings := jolt.NewBodyCreationSettings(floorShape, jolt.RVec3{0, -1, 0}, jolt.QuatIdentity(), jolt.MotionTypeStatic, layerNonMoving)
 	bi.CreateAndAddBody(floorSettings, jolt.ActivationDontActivate)
 	floorSettings.Destroy()
 	floorShape.Destroy()
 
 	// Falling sphere.
 	sphereShape := jolt.NewSphereShape(0.5)
-	sphereSettings := jolt.NewBodyCreationSettings(sphereShape, jolt.Vec3{0, 2, 0}, jolt.QuatIdentity(), jolt.MotionTypeDynamic, layerMoving)
+	sphereSettings := jolt.NewBodyCreationSettings(sphereShape, jolt.RVec3{0, 2, 0}, jolt.QuatIdentity(), jolt.MotionTypeDynamic, layerMoving)
 	sphereID := bi.CreateAndAddBody(sphereSettings, jolt.ActivationActivate)
 	sphereSettings.Destroy()
 	sphereShape.Destroy()

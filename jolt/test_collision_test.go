@@ -4,11 +4,11 @@ import "testing"
 
 // Ported from third_party/joltc/tests/test_collision.cpp.
 
-func createSphereBody(t *testing.T, f *physicsFixture, x, y, z, radius float32, motionType MotionType, layer ObjectLayer) BodyID {
+func createSphereBody(t *testing.T, f *physicsFixture, x, y, z Real, radius float32, motionType MotionType, layer ObjectLayer) BodyID {
 	t.Helper()
 	bi := f.system.BodyInterface()
 	shape := NewSphereShape(radius)
-	settings := NewBodyCreationSettings(shape, Vec3{x, y, z}, QuatIdentity(), motionType, layer)
+	settings := NewBodyCreationSettings(shape, RVec3{x, y, z}, QuatIdentity(), motionType, layer)
 	body := bi.CreateBody(settings)
 	id := body.ID()
 	bi.AddBody(id, ActivationActivate)
@@ -39,7 +39,7 @@ func TestCollisionRayCastHit(t *testing.T) {
 	f.system.OptimizeBroadPhase()
 
 	query := f.system.NarrowPhaseQuery()
-	hit, ok := query.CastRay(Vec3{-5, 0, 0}, Vec3{10, 0, 0})
+	hit, ok := query.CastRay(RVec3{-5, 0, 0}, Vec3{10, 0, 0})
 	if !ok {
 		t.Fatal("expected hit")
 	}
@@ -58,7 +58,7 @@ func TestCollisionRayCastMiss(t *testing.T) {
 	sphereID := createSphereBody(t, f, 0, 0, 0, 1, MotionTypeStatic, layerNonMoving)
 	f.system.OptimizeBroadPhase()
 
-	if _, ok := f.system.NarrowPhaseQuery().CastRay(Vec3{0, 10, 0}, Vec3{10, 0, 0}); ok {
+	if _, ok := f.system.NarrowPhaseQuery().CastRay(RVec3{0, 10, 0}, Vec3{10, 0, 0}); ok {
 		t.Error("expected miss")
 	}
 
@@ -73,7 +73,7 @@ func TestCollisionRayCastClosestHit(t *testing.T) {
 	sphere2ID := createSphereBody(t, f, 3, 0, 0, 1, MotionTypeDynamic, layerMoving)
 	f.system.OptimizeBroadPhase()
 
-	hit, ok := f.system.NarrowPhaseQuery().CastRay(Vec3{-10, 0, 0}, Vec3{20, 0, 0})
+	hit, ok := f.system.NarrowPhaseQuery().CastRay(RVec3{-10, 0, 0}, Vec3{20, 0, 0})
 	if !ok {
 		t.Fatal("expected hit")
 	}

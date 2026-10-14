@@ -125,7 +125,7 @@ func TestPhysicsSystemCreateBodySphere(t *testing.T) {
 	}
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -157,7 +157,7 @@ func TestPhysicsSystemCreateBodyBox(t *testing.T) {
 	shape := NewBoxShape(Vec3{1, 1, 1}, DefaultConvexRadius)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 0, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 0, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -179,7 +179,7 @@ func TestPhysicsSystemBodyGetPosition(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{1, 2, 3}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{1, 2, 3}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -187,9 +187,9 @@ func TestPhysicsSystemBodyGetPosition(t *testing.T) {
 	bi.AddBody(bodyID, ActivationActivate)
 
 	p := bi.Position(bodyID)
-	equalFloat(t, "pos.x", p.X, 1)
-	equalFloat(t, "pos.y", p.Y, 2)
-	equalFloat(t, "pos.z", p.Z, 3)
+	equalReal(t, "pos.x", p.X, 1)
+	equalReal(t, "pos.y", p.Y, 2)
+	equalReal(t, "pos.z", p.Z, 3)
 
 	bi.RemoveBody(bodyID)
 	bi.DestroyBody(bodyID)
@@ -202,18 +202,18 @@ func TestPhysicsSystemBodySetPosition(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 0, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 0, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
 	bodyID := body.ID()
 	bi.AddBody(bodyID, ActivationActivate)
 
-	bi.SetPosition(bodyID, Vec3{5, 10, 15}, ActivationActivate)
+	bi.SetPosition(bodyID, RVec3{5, 10, 15}, ActivationActivate)
 	p := bi.Position(bodyID)
-	equalFloat(t, "pos.x", p.X, 5)
-	equalFloat(t, "pos.y", p.Y, 10)
-	equalFloat(t, "pos.z", p.Z, 15)
+	equalReal(t, "pos.x", p.X, 5)
+	equalReal(t, "pos.y", p.Y, 10)
+	equalReal(t, "pos.z", p.Z, 15)
 
 	bi.RemoveBody(bodyID)
 	bi.DestroyBody(bodyID)
@@ -226,7 +226,7 @@ func TestPhysicsSystemBodySetLinearVelocity(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -250,7 +250,7 @@ func TestPhysicsSystemBodyAddImpulse(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -276,7 +276,7 @@ func TestPhysicsSystemBodyGetMotionType(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -298,7 +298,7 @@ func TestPhysicsSystemBodyActivateDeactivate(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -330,7 +330,7 @@ func TestPhysicsSystemBodyRestitution(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -351,7 +351,7 @@ func TestPhysicsSystemBodyFriction(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -372,7 +372,7 @@ func TestPhysicsSystemUpdateFallingBody(t *testing.T) {
 	shape := NewSphereShape(1)
 	defer shape.Destroy()
 
-	settings := NewBodyCreationSettings(shape, Vec3{0, 100, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings := NewBodyCreationSettings(shape, RVec3{0, 100, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 	defer settings.Destroy()
 
 	body := bi.CreateBody(settings)
@@ -405,7 +405,7 @@ func TestPhysicsSystemMultipleBodies(t *testing.T) {
 
 	for i := range numBodies {
 		shape := NewSphereShape(1)
-		settings := NewBodyCreationSettings(shape, Vec3{float32(i) * 3, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		settings := NewBodyCreationSettings(shape, RVec3{Real(i) * 3, 10, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
 		body := bi.CreateBody(settings)
 		bodyIDs[i] = body.ID()
 		bi.AddBody(bodyIDs[i], ActivationActivate)

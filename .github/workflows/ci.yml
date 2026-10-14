@@ -44,3 +44,23 @@ jobs:
 
       - name: build without cgo
         run: make build-nocgo
+
+  double-precision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+
+      - name: typecheck double-precision
+        run: go vet -composites=false -tags jolt_double ./...
+
+      - name: build double native library
+        run: make native-double
+
+      - name: test (jolt_double)
+        run: go test -tags jolt_double ./...

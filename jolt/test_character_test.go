@@ -27,7 +27,7 @@ func TestCharacterCreate(t *testing.T) {
 	defer settings.Destroy()
 	settings.SetShape(shape)
 
-	character := NewCharacter(settings, Vec3{0, 1, 0}, QuatIdentity(), 0, f.system)
+	character := NewCharacter(settings, RVec3{0, 1, 0}, QuatIdentity(), 0, f.system)
 	if character == nil {
 		t.Fatal("character is nil")
 	}
@@ -50,20 +50,20 @@ func TestCharacterPositionAndRotation(t *testing.T) {
 	defer settings.Destroy()
 	settings.SetShape(shape)
 
-	character := NewCharacter(settings, Vec3{1, 2, 3}, QuatIdentity(), 0, f.system)
+	character := NewCharacter(settings, RVec3{1, 2, 3}, QuatIdentity(), 0, f.system)
 	defer character.Destroy()
 	character.AddToPhysicsSystem(ActivationActivate, true)
 
 	p := character.Position(true)
-	equalFloat(t, "pos.x", p.X, 1)
-	equalFloat(t, "pos.y", p.Y, 2)
-	equalFloat(t, "pos.z", p.Z, 3)
+	equalReal(t, "pos.x", p.X, 1)
+	equalReal(t, "pos.y", p.Y, 2)
+	equalReal(t, "pos.z", p.Z, 3)
 
-	character.SetPosition(Vec3{5, 6, 7}, ActivationActivate, true)
+	character.SetPosition(RVec3{5, 6, 7}, ActivationActivate, true)
 	p = character.Position(true)
-	equalFloat(t, "new pos.x", p.X, 5)
-	equalFloat(t, "new pos.y", p.Y, 6)
-	equalFloat(t, "new pos.z", p.Z, 7)
+	equalReal(t, "new pos.x", p.X, 5)
+	equalReal(t, "new pos.y", p.Y, 6)
+	equalReal(t, "new pos.z", p.Z, 7)
 
 	character.RemoveFromPhysicsSystem(true)
 }
@@ -78,7 +78,7 @@ func TestCharacterVelocity(t *testing.T) {
 	defer settings.Destroy()
 	settings.SetShape(shape)
 
-	character := NewCharacter(settings, Vec3{0, 1, 0}, QuatIdentity(), 0, f.system)
+	character := NewCharacter(settings, RVec3{0, 1, 0}, QuatIdentity(), 0, f.system)
 	defer character.Destroy()
 	character.AddToPhysicsSystem(ActivationActivate, true)
 

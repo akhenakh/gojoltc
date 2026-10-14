@@ -130,7 +130,7 @@ func TestSkeletonPoseRootOffset(t *testing.T) {
 	pose := NewSkeletonPose()
 	defer pose.Destroy()
 
-	pose.SetRootOffset(Vec3{1, 2, 3})
+	pose.SetRootOffset(RVec3{1, 2, 3})
 	equalVec3(t, "offset", pose.RootOffset().ToVec3(), Vec3{1, 2, 3})
 }
 
@@ -188,13 +188,13 @@ func TestSkeletonRagdollSettingsParts(t *testing.T) {
 	defer shape.Destroy()
 
 	settings.SetPartShape(0, shape)
-	settings.SetPartPosition(0, Vec3{0, 1, 0})
+	settings.SetPartPosition(0, RVec3{0, 1, 0})
 	settings.SetPartRotation(0, QuatIdentity())
 	settings.SetPartMotionType(0, MotionTypeDynamic)
 	settings.SetPartObjectLayer(0, layerMoving)
 }
 
-func buildSimpleRagdoll(t *testing.T, f *physicsFixture, position Vec3) (*Skeleton, *RagdollSettings, *Shape, *Ragdoll) {
+func buildSimpleRagdoll(t *testing.T, f *physicsFixture, position RVec3) (*Skeleton, *RagdollSettings, *Shape, *Ragdoll) {
 	t.Helper()
 	skeleton := NewSkeleton()
 	skeleton.AddJoint("root")
@@ -216,7 +216,7 @@ func buildSimpleRagdoll(t *testing.T, f *physicsFixture, position Vec3) (*Skelet
 
 func TestSkeletonRagdollCreateSimple(t *testing.T) {
 	f := newPhysicsFixture(t)
-	skeleton, settings, shape, ragdoll := buildSimpleRagdoll(t, f, Vec3{0, 1, 0})
+	skeleton, settings, shape, ragdoll := buildSimpleRagdoll(t, f, RVec3{0, 1, 0})
 	defer skeleton.Destroy()
 	defer settings.Destroy()
 	defer shape.Destroy()
@@ -235,7 +235,7 @@ func TestSkeletonRagdollCreateSimple(t *testing.T) {
 
 func TestSkeletonRagdollAddRemoveFromPhysicsSystem(t *testing.T) {
 	f := newPhysicsFixture(t)
-	skeleton, settings, shape, ragdoll := buildSimpleRagdoll(t, f, Vec3{0, 1, 0})
+	skeleton, settings, shape, ragdoll := buildSimpleRagdoll(t, f, RVec3{0, 1, 0})
 	defer skeleton.Destroy()
 	defer settings.Destroy()
 	defer shape.Destroy()
@@ -250,7 +250,7 @@ func TestSkeletonRagdollAddRemoveFromPhysicsSystem(t *testing.T) {
 
 func TestSkeletonRagdollGetRootTransform(t *testing.T) {
 	f := newPhysicsFixture(t)
-	skeleton, settings, shape, ragdoll := buildSimpleRagdoll(t, f, Vec3{1, 2, 3})
+	skeleton, settings, shape, ragdoll := buildSimpleRagdoll(t, f, RVec3{1, 2, 3})
 	defer skeleton.Destroy()
 	defer settings.Destroy()
 	defer shape.Destroy()
@@ -259,9 +259,9 @@ func TestSkeletonRagdollGetRootTransform(t *testing.T) {
 	ragdoll.AddToPhysicsSystem(ActivationActivate, true)
 
 	pos, _ := ragdoll.RootTransform(true)
-	equalFloat(t, "root.x", pos.X, 1)
-	equalFloat(t, "root.y", pos.Y, 2)
-	equalFloat(t, "root.z", pos.Z, 3)
+	equalReal(t, "root.x", pos.X, 1)
+	equalReal(t, "root.y", pos.Y, 2)
+	equalReal(t, "root.z", pos.Z, 3)
 
 	ragdoll.RemoveFromPhysicsSystem(true)
 }
