@@ -21,6 +21,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 
@@ -273,6 +274,14 @@ func buildScene(system *jolt.PhysicsSystem, index int) func() {
 
 // --- main -------------------------------------------------------------------
 
+// subSteps keeps each simulation step near 1/60 s whatever the frame took: Jolt
+// divides the delta across the steps it runs, so a hitched frame would otherwise
+// hand the solver one oversized step and destabilise the rover's linkages.
+func subSteps(dt float32) int {
+	steps := int(math.Ceil(float64(dt) / (1.0 / 60.0)))
+	return min(max(steps, 1), 4)
+}
+
 func main() {
 	if err := jolt.Init(); err != nil {
 		panic(err)
@@ -341,7 +350,11 @@ func main() {
 			drive()
 		}
 		if !paused || stepOnce {
-			w.system.Update(rl.GetFrameTime(), 1, w.jobSystem)
+			dt := rl.GetFrameTime()
+			if stepOnce {
+				dt = 1.0 / 60.0 // a single fixed step
+			}
+			w.system.Update(dt, subSteps(dt), w.jobSystem)
 		}
 
 		geom.reset()
