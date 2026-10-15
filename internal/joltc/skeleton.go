@@ -114,6 +114,27 @@ func (p *SkeletonPose) RootOffset() vecmath.RVec3 {
 // JointCount returns the number of joints in the pose.
 func (p *SkeletonPose) JointCount() int { return int(C.JPH_SkeletonPose_GetJointCount(p.ptr)) }
 
+// CalculateLocalSpaceJointMatrices returns the local-space matrix of every joint.
+//
+// Hand-written rather than generated: joltc's
+// JPH_SkeletonPose_CalculateLocalSpaceJointMatrices writes JointCount() matrices
+// into the buffer it is given, so the buffer has to be sized from the pose here.
+// Wrapping it as a single-value accessor (as the generator used to) let C write
+// past a one-matrix buffer.
+func (p *SkeletonPose) CalculateLocalSpaceJointMatrices() []vecmath.Mat4 {
+	n := p.JointCount()
+	if n <= 0 {
+		return nil
+	}
+	out := make([]C.JPH_Mat4, n)
+	C.JPH_SkeletonPose_CalculateLocalSpaceJointMatrices(p.ptr, &out[0])
+	matrices := make([]vecmath.Mat4, n)
+	for i := range out {
+		matrices[i] = mat4FromC(out[i])
+	}
+	return matrices
+}
+
 // JointState returns the translation and rotation of the joint at index.
 func (p *SkeletonPose) JointState(index int) (vecmath.Vec3, vecmath.Quat) {
 	var t C.JPH_Vec3

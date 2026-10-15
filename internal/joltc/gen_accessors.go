@@ -305,10 +305,9 @@ func (r *Constraint) SetNumPositionStepsOverride(value uint32) {
 }
 
 // NotifyShapeChanged wraps JPH_Constraint_NotifyShapeChanged.
-func (r *Constraint) NotifyShapeChanged(id BodyID) vecmath.Vec3 {
-	var out C.JPH_Vec3
-	C.JPH_Constraint_NotifyShapeChanged((*C.JPH_Constraint)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
-	return vec3FromC(out)
+func (r *Constraint) NotifyShapeChanged(id BodyID, value vecmath.Vec3) {
+	c := vec3ToC(value)
+	C.JPH_Constraint_NotifyShapeChanged((*C.JPH_Constraint)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &c)
 }
 
 // IsActive wraps JPH_Constraint_IsActive.
@@ -356,24 +355,21 @@ func (r *BodyInterface) CenterOfMassTransform(id BodyID) vecmath.RMat4 {
 }
 
 // AddLinearVelocity wraps JPH_BodyInterface_AddLinearVelocity.
-func (r *BodyInterface) AddLinearVelocity(id BodyID) vecmath.Vec3 {
-	var out C.JPH_Vec3
-	C.JPH_BodyInterface_AddLinearVelocity((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
-	return vec3FromC(out)
+func (r *BodyInterface) AddLinearVelocity(id BodyID, value vecmath.Vec3) {
+	c := vec3ToC(value)
+	C.JPH_BodyInterface_AddLinearVelocity((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &c)
 }
 
 // AddTorque wraps JPH_BodyInterface_AddTorque.
-func (r *BodyInterface) AddTorque(id BodyID) vecmath.Vec3 {
-	var out C.JPH_Vec3
-	C.JPH_BodyInterface_AddTorque((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
-	return vec3FromC(out)
+func (r *BodyInterface) AddTorque(id BodyID, value vecmath.Vec3) {
+	c := vec3ToC(value)
+	C.JPH_BodyInterface_AddTorque((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &c)
 }
 
 // AddAngularImpulse wraps JPH_BodyInterface_AddAngularImpulse.
-func (r *BodyInterface) AddAngularImpulse(id BodyID) vecmath.Vec3 {
-	var out C.JPH_Vec3
-	C.JPH_BodyInterface_AddAngularImpulse((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &out)
-	return vec3FromC(out)
+func (r *BodyInterface) AddAngularImpulse(id BodyID, value vecmath.Vec3) {
+	c := vec3ToC(value)
+	C.JPH_BodyInterface_AddAngularImpulse((*C.JPH_BodyInterface)(unsafe.Pointer(r.ptr)), C.JPH_BodyID(id), &c)
 }
 
 // SetMotionQuality wraps JPH_BodyInterface_SetMotionQuality.
@@ -807,13 +803,6 @@ func (r *Character) Activate(value bool) {
 // Layer wraps JPH_Character_GetLayer.
 func (r *Character) Layer() ObjectLayer {
 	return ObjectLayer(C.JPH_Character_GetLayer((*C.JPH_Character)(unsafe.Pointer(r.ptr))))
-}
-
-// CalculateLocalSpaceJointMatrices wraps JPH_SkeletonPose_CalculateLocalSpaceJointMatrices.
-func (r *SkeletonPose) CalculateLocalSpaceJointMatrices() vecmath.Mat4 {
-	var out C.JPH_Mat4
-	C.JPH_SkeletonPose_CalculateLocalSpaceJointMatrices((*C.JPH_SkeletonPose)(unsafe.Pointer(r.ptr)), &out)
-	return mat4FromC(out)
 }
 
 // Stabilize wraps JPH_RagdollSettings_Stabilize.

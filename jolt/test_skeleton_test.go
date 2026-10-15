@@ -1,6 +1,9 @@
 package jolt
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 // Ported from third_party/joltc/tests/test_skeleton.cpp.
 
@@ -272,5 +275,41 @@ func TestSkeletonMapperCreate(t *testing.T) {
 	defer mapper.Destroy()
 	if mapper == nil {
 		t.Fatal("mapper is nil")
+	}
+}
+
+// joltc's JPH_SkeletonPose_CalculateLocalSpaceJointMatrices writes one matrix per
+// joint into the buffer it is given, so the wrapper has to size it from the pose.
+// Wrapping it as a single-value accessor (which the generator did) let C write
+// past a one-matrix buffer for any pose with more than one joint.
+func TestSkeletonPoseLocalSpaceJointMatrices(t *testing.T) {
+	initSkeleton(t)
+	skeleton := NewSkeleton()
+	defer skeleton.Destroy()
+	skeleton.AddJoint("root")
+	skeleton.AddJointWithParentIndex("spine", 0)
+	skeleton.AddJointWithParentIndex("head", 1)
+
+	pose := NewSkeletonPose()
+	defer pose.Destroy()
+	pose.SetSkeleton(skeleton)
+
+	if n := pose.JointCount(); n != 3 {
+		t.Fatalf("pose joint count = %d, want 3", n)
+	}
+
+	matrices := pose.CalculateLocalSpaceJointMatrices()
+	if len(matrices) != 3 {
+		t.Fatalf("got %d matrices, want 3", len(matrices))
+	}
+	for i, m := range matrices {
+		for c := range 4 {
+			col := m.Col[c]
+			for _, v := range []float32{col.X, col.Y, col.Z, col.W} {
+				if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+					t.Fatalf("matrix %d has a non-finite component: %+v", i, col)
+				}
+			}
+		}
 	}
 }

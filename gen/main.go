@@ -222,7 +222,14 @@ func main() {
 			fmt.Fprintf(os.Stderr, "gen: %s is out of date; run: go run ./gen\n", *out)
 			os.Exit(1)
 		}
-		fmt.Printf("generated %d accessors, skipped %d; %s is up to date\n", generated, skipped, *out)
+		// The coverage summary is written by the same run, so check it too - it used
+		// to go stale silently because only the accessor file was compared.
+		existingCoverage, err := os.ReadFile(coveragePath)
+		if err != nil || string(existingCoverage) != coverageContent(decls, wrapped, generatedNames) {
+			fmt.Fprintf(os.Stderr, "gen: %s is out of date; run: go run ./gen\n", coveragePath)
+			os.Exit(1)
+		}
+		fmt.Printf("generated %d accessors, skipped %d; %s and %s are up to date\n", generated, skipped, *out, coveragePath)
 		return
 	}
 
@@ -372,20 +379,42 @@ func emit(d decl) (code, reason string) {
 		}
 	}
 
-	// Out-parameter: void NAME(recv, [id,] T* out).
+	// Trailing non-const pointer. joltc uses one for two opposite things and only the
+	// name tells them apart: every getter is named Get*, while Set*/Add*/Notify*
+	// mutations also pass their value through a non-const pointer. Guessing wrong is
+	// silent corruption (an uninitialised value handed to C, or a value C overwrote),
+	// so anything else is skipped rather than wrapped.
 	if isVoid && len(rem) == 1 && rem[0].ptr && !rem[0].cst {
 		out := rem[0].base()
-		if gt, ok := scalar[out]; ok {
-			return outScalar(recv, goName, d.name, rExpr, idDecl, idArgs, gt.goType, gt.conv), ""
+		switch {
+		case strings.HasPrefix(parts[1], "Get"):
+			// Out-parameter: void GetXxx(recv, [id,] T* out).
+			if gt, ok := scalar[out]; ok {
+				return outScalar(recv, goName, d.name, rExpr, idDecl, idArgs, gt.goType, gt.conv), ""
+			}
+			if gt, ok := enums[out]; ok {
+				return outEnum(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
+			}
+			if gt, ok := vectors[out]; ok {
+				return outVec(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
+			}
+			return "", "unsupported out-parameter type"
+		case isMutator(parts[1]):
+			// Pointer input: void AddXxx(recv, [id,] T* value).
+			if gt, ok := vectors[out]; ok {
+				return vecSetter(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
+			}
+			return "", "pointer input outside the value types"
 		}
-		if gt, ok := enums[out]; ok {
-			return outEnum(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
-		}
-		if gt, ok := vectors[out]; ok {
-			return outVec(recv, goName, d.name, rExpr, idDecl, idArgs, gt), ""
-		}
+		return "", "trailing pointer is neither a Get* result nor a Set*/Add*/Notify* input"
 	}
 	return "", "unsupported shape"
+}
+
+// isMutator reports whether a C method takes its argument through a non-const
+// pointer instead of returning it.
+func isMutator(m string) bool {
+	return strings.HasPrefix(m, "Set") || strings.HasPrefix(m, "Add") || strings.HasPrefix(m, "Notify")
 }
 
 func methodName(m string) string {
@@ -475,9 +504,9 @@ func fatal(err error) {
 	os.Exit(1)
 }
 
-// writeCoverage writes docs/coverage.md summarising how much of the joltc C API
-// is wrapped, and which groups remain.
-func writeCoverage(decls []decl, wrapped map[string]bool, generated map[string]bool) error {
+// coverageContent renders docs/coverage.md: how much of the joltc C API is
+// wrapped, and which groups remain.
+func coverageContent(decls []decl, wrapped map[string]bool, generated map[string]bool) string {
 	handWrapped := 0
 	remaining := map[string]int{}
 	for _, d := range decls {
@@ -526,5 +555,12 @@ func writeCoverage(decls []decl, wrapped map[string]bool, generated map[string]b
 	for _, g := range groups {
 		fmt.Fprintf(&b, "| `%s` | %d |\n", g.k, g.v)
 	}
-	return os.WriteFile("docs/coverage.md", []byte(b.String()), 0o644)
+	return b.String()
+}
+
+const coveragePath = "docs/coverage.md"
+
+// writeCoverage writes docs/coverage.md.
+func writeCoverage(decls []decl, wrapped map[string]bool, generated map[string]bool) error {
+	return os.WriteFile(coveragePath, []byte(coverageContent(decls, wrapped, generated)), 0o644)
 }

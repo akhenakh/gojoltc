@@ -193,3 +193,41 @@ func TestBodyMassOverride(t *testing.T) {
 		t.Errorf("wy after a %v N.m.s impulse = %v, want 1 (inertia must come from the shape)", float32(mass/6), ang.Y)
 	}
 }
+
+// The code generator used to mistake the non-const pointer *inputs* of these
+// mutators for out-parameters: it dropped the argument, handed Jolt an
+// uninitialised value and returned that same value to the caller.
+func TestBodyInterfaceVectorMutators(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	const mass = 11.3 // inertia m/6 about each axis for this 1 m cube
+	shape := NewBoxShape(Vec3{0.5, 0.5, 0.5}, 0)
+	defer shape.Destroy()
+
+	settings := NewBodyCreationSettings(shape, RVec3{0, 20, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	settings.SetOverrideMassProperties(OverrideMassPropertiesCalculateInertia)
+	settings.SetMassPropertiesOverride(NewMassProperties(mass))
+	id := bi.CreateAndAddBody(settings, ActivationActivate)
+	settings.Destroy()
+	t.Cleanup(func() { bi.RemoveAndDestroyBody(id) })
+
+	// AddLinearVelocity adds its argument instead of discarding it.
+	bi.AddLinearVelocity(id, Vec3{2, 0, 0})
+	if lin, _ := bi.GetLinearAndAngularVelocity(id); math.Abs(float64(lin.X)-2) > 1e-4 {
+		t.Errorf("vx after AddLinearVelocity = %v, want 2", lin.X)
+	}
+
+	// AddAngularImpulse: an impulse of I gives 1 rad/s.
+	bi.AddAngularImpulse(id, Vec3{0, mass / 6, 0})
+	if _, ang := bi.GetLinearAndAngularVelocity(id); math.Abs(float64(ang.Y)-1) > 1e-3 {
+		t.Errorf("wy after AddAngularImpulse = %v, want 1", ang.Y)
+	}
+
+	// AddTorque accumulates a torque that the next step applies: dW = torque*dt/I.
+	bi.AddTorque(id, Vec3{0, mass / 6 * 60, 0})
+	f.system.Update(1.0/60.0, 1, f.jobSystem)
+	if _, ang := bi.GetLinearAndAngularVelocity(id); math.Abs(float64(ang.Y)-2) > 0.1 {
+		t.Errorf("wy after AddTorque = %v, want ~2 (1 from the impulse plus one step of torque)", ang.Y)
+	}
+}
