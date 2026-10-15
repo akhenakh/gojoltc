@@ -261,3 +261,233 @@ func TestGearCouplesTwoHingesAsDifferentialPivot(t *testing.T) {
 		t.Errorf("the two hinges are not locked to ratio 1: |a1 + a2| = %v", sum)
 	}
 }
+
+// worldAnchor returns the world position of a body-local point (relative to the
+// center of mass), in float64 so the assertion reads the same in both precisions.
+func worldAnchor(t *testing.T, bi *BodyInterface, id BodyID, local Vec3) (float64, float64, float64) {
+	t.Helper()
+	p := bi.Position(id)
+	off := bi.Rotation(id).Rotate(local)
+	return float64(p.X) + float64(off.X), float64(p.Y) + float64(off.Y), float64(p.Z) + float64(off.Z)
+}
+
+// The distance settings' anchors default to the world origin, so a rod only
+// holds two bodies apart once its ends are set. This is the difference between a
+// usable tie-rod (or differential-bar linkage) and one that welds both bodies to
+// (0,0,0).
+func TestDistanceConstraintAnchors(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	shape := NewBoxShape(Vec3{0.5, 0.5, 0.5}, DefaultConvexRadius)
+	defer shape.Destroy()
+	ids := make([]BodyID, 2)
+	for i, start := range []RVec3{{-1, 5, 0}, {1, 5, 0}} {
+		s := NewBodyCreationSettings(shape, start, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		s.SetAllowSleeping(false)
+		ids[i] = bi.CreateAndAddBody(s, ActivationActivate)
+		s.Destroy()
+	}
+	t.Cleanup(func() {
+		for _, id := range ids {
+			bi.RemoveAndDestroyBody(id)
+		}
+	})
+	f.system.OptimizeBroadPhase()
+
+	// A rigid rod between the two inner faces: they are 1 m apart to start.
+	settings := NewDistanceConstraintSettings()
+	defer settings.Destroy()
+	settings.SetSpace(ConstraintSpaceLocalToBodyCOM)
+	settings.SetLocalSpacePoint1(RVec3{0.5, 0, 0})
+	settings.SetLocalSpacePoint2(RVec3{-0.5, 0, 0})
+	settings.SetInitialDistance(1, 1)
+	c := settings.Create(f.system.BodyPtr(ids[0]), f.system.BodyPtr(ids[1]))
+	addConstraint(t, f, c)
+
+	for range 120 {
+		f.system.Update(1.0/60.0, 1, f.jobSystem)
+	}
+
+	x0, y0, z0 := worldAnchor(t, bi, ids[0], Vec3{0.5, 0, 0})
+	x1, y1, z1 := worldAnchor(t, bi, ids[1], Vec3{-0.5, 0, 0})
+	if d := math.Sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0) + (z1-z0)*(z1-z0)); math.Abs(d-1) > 0.05 {
+		t.Errorf("anchor separation = %v, want 1", d)
+	}
+	// And they fell together rather than being dragged to the anchors' default
+	// world origin.
+	for i, id := range ids {
+		if p := bi.Position(id); math.Abs(math.Hypot(float64(p.X), float64(p.Z))) < 0.5 {
+			t.Errorf("body %d was pulled towards the origin: x = %v, z = %v", i, p.X, p.Z)
+		}
+	}
+	if y0 > 4 {
+		t.Errorf("the pair did not fall under gravity: y = %v", y0)
+	}
+}
+
+// A point constraint is a ball joint: with the anchor at the arm's tip, the tip
+// stays put while the arm swings about it.
+func TestPointConstraintAnchors(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	anchorShape := NewBoxShape(Vec3{0.1, 0.1, 0.1}, DefaultConvexRadius)
+	defer anchorShape.Destroy()
+	as := NewBodyCreationSettings(anchorShape, RVec3{0, 5, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+	anchorID := bi.CreateAndAddBody(as, ActivationDontActivate)
+	as.Destroy()
+
+	armShape := NewBoxShape(Vec3{0.75, 0.05, 0.05}, DefaultConvexRadius)
+	defer armShape.Destroy()
+	// Centered at x=1, so its -x tip is at x=0.25 and the anchor's face is at 0.1:
+	// the joint pivot is chosen on the arm's tip and the anchor's center.
+	arms := NewBodyCreationSettings(armShape, RVec3{1, 5, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	arms.SetAllowSleeping(false)
+	armID := bi.CreateAndAddBody(arms, ActivationActivate)
+	arms.Destroy()
+	t.Cleanup(func() {
+		bi.RemoveAndDestroyBody(armID)
+		bi.RemoveAndDestroyBody(anchorID)
+	})
+	f.system.OptimizeBroadPhase()
+
+	settings := NewPointConstraintSettings()
+	defer settings.Destroy()
+	settings.SetSpace(ConstraintSpaceLocalToBodyCOM)
+	settings.SetLocalSpacePoint1(RVec3{0, 0, 0})  // the anchor's center, world (0, 5, 0)
+	settings.SetLocalSpacePoint2(RVec3{-1, 0, 0}) // the arm's near tip, the same point
+	c := settings.Create(f.system.BodyPtr(anchorID), f.system.BodyPtr(armID))
+	addConstraint(t, f, c)
+
+	for range 120 {
+		f.system.Update(1.0/60.0, 1, f.jobSystem)
+	}
+
+	tipX, tipY, tipZ := worldAnchor(t, bi, armID, Vec3{-1, 0, 0})
+	if d := math.Sqrt(tipX*tipX + (tipY-5)*(tipY-5) + tipZ*tipZ); d > 0.05 {
+		t.Errorf("the joint's pivot moved %v m from (0,5,0)", d)
+	}
+	// The arm hung off the pivot instead of staying welded at the origin.
+	centre := bi.Position(armID)
+	if math.Hypot(float64(centre.X), float64(centre.Y-5)) < 0.5 {
+		t.Errorf("arm did not swing about the anchor: centre = (%v,%v)", centre.X, centre.Y)
+	}
+}
+
+// The chassis-mounted differential a rover needs — two rockers whose rotations
+// stay equal and opposite — cannot be a gear (Jolt's gear couples absolute
+// angular velocities, so it only works with its hinges anchored to the world; see
+// TestGearCouplesTwoHingesAsDifferentialPivot). It can be a differential bar: a
+// bar on a *longitudinal* hinge, tied to each rocker by a rigid rod, which turns
+// the pair's average into the bar's rotation and forces the anti-symmetric
+// coupling. This is what the new distance anchors are for.
+func TestDifferentialBarCouplesRockers(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	// A static chassis frame: the two rockers hang off it at z = +/-0.25 and the
+	// bar pivots on it above them.
+	anchorShape := NewBoxShape(Vec3{0.1, 0.1, 0.1}, DefaultConvexRadius)
+	defer anchorShape.Destroy()
+	as := NewBodyCreationSettings(anchorShape, RVec3{0, 0, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+	anchorID := bi.CreateAndAddBody(as, ActivationDontActivate)
+	as.Destroy()
+	t.Cleanup(func() { bi.RemoveAndDestroyBody(anchorID) })
+	anchor := f.system.BodyPtr(anchorID)
+
+	// Rockers: boxes centred on their own pivots (so gravity exerts no torque and
+	// the only load is the rods), each hinged to the frame about the lateral axis.
+	rockerShape := NewBoxShape(Vec3{0.35, 0.03, 0.03}, DefaultConvexRadius)
+	defer rockerShape.Destroy()
+	var rockers [2]*Body
+	var rockerHinges [2]*Constraint
+	for i, z := range []Real{-0.25, 0.25} {
+		s := NewBodyCreationSettings(rockerShape, RVec3{0, 0, z}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		s.SetFriction(0.6)
+		s.SetAllowSleeping(false)
+		s.SetOverrideMassProperties(OverrideMassPropertiesCalculateInertia)
+		s.SetMassPropertiesOverride(NewMassProperties(1.2))
+		id := bi.CreateAndAddBody(s, ActivationActivate)
+		s.Destroy()
+		t.Cleanup(func() { bi.RemoveAndDestroyBody(id) })
+		rockers[i] = f.system.BodyPtr(id)
+
+		hs := NewHingeConstraintSettings()
+		hs.SetSpace(ConstraintSpaceLocalToBodyCOM)
+		hs.SetLocalSpacePoint1(RVec3{0, 0, z}) // the frame's pivot, in the frame's frame
+		hs.SetLocalSpacePoint2(RVec3{0, 0, 0})
+		hs.SetHingeAxis1(Vec3{0, 0, 1}) // lateral
+		hs.SetHingeAxis2(Vec3{0, 0, 1})
+		hs.SetNormalAxis1(Vec3{1, 0, 0})
+		hs.SetNormalAxis2(Vec3{1, 0, 0})
+		rockerHinges[i] = hs.Create(anchor, rockers[i])
+		hs.Destroy()
+		addConstraint(t, f, rockerHinges[i])
+	}
+
+	// The bar: hinged to the frame about the *longitudinal* axis so its two arms
+	// move in opposite vertical directions, with its arms reaching down over the
+	// rockers' front ends.
+	barShape := NewBoxShape(Vec3{0.03, 0.03, 0.25}, DefaultConvexRadius)
+	defer barShape.Destroy()
+	bs := NewBodyCreationSettings(barShape, RVec3{0.35, 0.5, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	bs.SetAllowSleeping(false)
+	bs.SetOverrideMassProperties(OverrideMassPropertiesCalculateInertia)
+	bs.SetMassPropertiesOverride(NewMassProperties(0.4))
+	barID := bi.CreateAndAddBody(bs, ActivationActivate)
+	bs.Destroy()
+	t.Cleanup(func() { bi.RemoveAndDestroyBody(barID) })
+	bar := f.system.BodyPtr(barID)
+
+	bhs := NewHingeConstraintSettings()
+	bhs.SetSpace(ConstraintSpaceLocalToBodyCOM)
+	bhs.SetLocalSpacePoint1(RVec3{0.35, 0.5, 0}) // the bar's own pivot, from the frame
+	bhs.SetLocalSpacePoint2(RVec3{0, 0, 0})
+	bhs.SetHingeAxis1(Vec3{1, 0, 0}) // longitudinal
+	bhs.SetHingeAxis2(Vec3{1, 0, 0})
+	bhs.SetNormalAxis1(Vec3{0, 1, 0}) // perpendicular to the hinge axis
+	bhs.SetNormalAxis2(Vec3{0, 1, 0})
+	barHinge := bhs.Create(anchor, bar)
+	bhs.Destroy()
+	addConstraint(t, f, barHinge)
+
+	// The rods: rigid (min == max), vertical at rest, from each bar arm down to the
+	// rocker's front end, so a rocker's rotation reaches the bar and back out.
+	for i, z := range []Real{-0.25, 0.25} {
+		ds := NewDistanceConstraintSettings()
+		ds.SetSpace(ConstraintSpaceLocalToBodyCOM)
+		ds.SetLocalSpacePoint1(RVec3{0, 0, z})    // bar arm
+		ds.SetLocalSpacePoint2(RVec3{0.35, 0, 0}) // rocker's front end
+		ds.SetInitialDistance(0.5, 0.5)           // the rods are 0.5 m at rest
+		c := ds.Create(bar, rockers[i])
+		ds.Destroy()
+		addConstraint(t, f, c)
+	}
+
+	f.system.OptimizeBroadPhase()
+
+	// Drive one rocker; the bar must pass it to the other, reversed.
+	motor := DefaultMotorSettings()
+	rockerHinges[0].HingeSetMotorSettings(motor)
+	rockerHinges[0].HingeSetMotorState(MotorStatePosition)
+	rockerHinges[0].HingeSetTargetAngle(0.35)
+
+	for range 180 {
+		f.system.Update(1.0/60.0, 1, f.jobSystem)
+	}
+
+	driven := rockerHinges[0].HingeCurrentAngle()
+	followed := rockerHinges[1].HingeCurrentAngle()
+	t.Logf("driven rocker %v rad, coupled rocker %v rad, bar %v rad", driven, followed, barHinge.HingeCurrentAngle())
+
+	if math.Abs(float64(driven)-0.35) > 0.1 {
+		t.Errorf("driven rocker = %v rad, want ~0.35", driven)
+	}
+	if math.Abs(float64(followed)+0.35) > 0.1 {
+		t.Errorf("coupled rocker = %v rad, want ~-0.35 (the bar inverts it)", followed)
+	}
+	if sum := math.Abs(float64(driven + followed)); sum > 0.05 {
+		t.Errorf("the differential bar did not hold the rockers mirrored: |a1 + a2| = %v", sum)
+	}
+}

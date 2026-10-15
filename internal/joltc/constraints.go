@@ -110,6 +110,32 @@ func NewDistanceConstraintSettings() *DistanceConstraintSettings {
 	return &DistanceConstraintSettings{ptr: p}
 }
 
+// SetSpace sets the space the points are expressed in (world space by default;
+// see HingeConstraintSettings.SetSpace).
+func (s *DistanceConstraintSettings) SetSpace(space ConstraintSpace) {
+	s.ptr.space = C.JPH_ConstraintSpace(space)
+}
+
+// SetLocalSpacePoint1 sets the anchor on body 1, in the space selected by
+// SetSpace (body-local only when that is ConstraintSpaceLocalToBodyCOM). The
+// defaults are all zero, i.e. the world origin, so a rod whose ends are not set
+// pins the same point on both bodies.
+func (s *DistanceConstraintSettings) SetLocalSpacePoint1(p vecmath.RVec3) {
+	s.ptr.point1 = rvec3ToC(p)
+}
+
+// SetLocalSpacePoint2 sets the anchor on body 2.
+func (s *DistanceConstraintSettings) SetLocalSpacePoint2(p vecmath.RVec3) {
+	s.ptr.point2 = rvec3ToC(p)
+}
+
+// SetInitialDistance sets the distance between the anchors the constraint is
+// created with. Equal min and max is a rigid rod; a range makes a slack link.
+func (s *DistanceConstraintSettings) SetInitialDistance(min, max float32) {
+	s.ptr.minDistance = C.float(min)
+	s.ptr.maxDistance = C.float(max)
+}
+
 // Destroy releases the settings.
 func (s *DistanceConstraintSettings) Destroy() {
 	if s.ptr != nil {
@@ -152,6 +178,23 @@ func NewPointConstraintSettings() *PointConstraintSettings {
 	return &PointConstraintSettings{ptr: p}
 }
 
+// SetSpace sets the space the points are expressed in (world space by default;
+// see HingeConstraintSettings.SetSpace).
+func (s *PointConstraintSettings) SetSpace(space ConstraintSpace) {
+	s.ptr.space = C.JPH_ConstraintSpace(space)
+}
+
+// SetLocalSpacePoint1 sets the ball joint's anchor on body 1, in the space
+// selected by SetSpace. A default point constraint pins the world origin.
+func (s *PointConstraintSettings) SetLocalSpacePoint1(p vecmath.RVec3) {
+	s.ptr.point1 = rvec3ToC(p)
+}
+
+// SetLocalSpacePoint2 sets the ball joint's anchor on body 2.
+func (s *PointConstraintSettings) SetLocalSpacePoint2(p vecmath.RVec3) {
+	s.ptr.point2 = rvec3ToC(p)
+}
+
 // Destroy releases the settings.
 func (s *PointConstraintSettings) Destroy() {
 	if s.ptr != nil {
@@ -170,6 +213,18 @@ func (c *Constraint) PointLocalSpacePoint1() vecmath.Vec3 {
 	var o C.JPH_Vec3
 	C.JPH_PointConstraint_GetLocalSpacePoint1((*C.JPH_PointConstraint)(unsafe.Pointer(c.ptr)), &o)
 	return vec3FromC(o)
+}
+
+// PointSetPoint1 moves the ball joint's anchor on body 1, in the given space.
+func (c *Constraint) PointSetPoint1(space ConstraintSpace, p vecmath.RVec3) {
+	cp := rvec3ToC(p)
+	C.JPH_PointConstraint_SetPoint1((*C.JPH_PointConstraint)(unsafe.Pointer(c.ptr)), C.JPH_ConstraintSpace(space), &cp)
+}
+
+// PointSetPoint2 moves the ball joint's anchor on body 2, in the given space.
+func (c *Constraint) PointSetPoint2(space ConstraintSpace, p vecmath.RVec3) {
+	cp := rvec3ToC(p)
+	C.JPH_PointConstraint_SetPoint2((*C.JPH_PointConstraint)(unsafe.Pointer(c.ptr)), C.JPH_ConstraintSpace(space), &cp)
 }
 
 // PointLocalSpacePoint2 returns the local space point on body 2.
