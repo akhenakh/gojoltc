@@ -231,3 +231,73 @@ func TestBodyInterfaceVectorMutators(t *testing.T) {
 		t.Errorf("wy after AddTorque = %v, want ~2 (1 from the impulse plus one step of torque)", ang.Y)
 	}
 }
+
+// Pairs with TestBodyMassOverride: a body reports the mass and the shape-derived
+// inertia Jolt is actually using, which is what makes the override verifiable
+// (and what telemetry needs).
+func TestBodyMassPropertiesReadBack(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	shape := NewBoxShape(Vec3{0.5, 0.5, 0.5}, 0) // a plain 1 m cube
+	defer shape.Destroy()
+
+	dyn := NewBodyCreationSettings(shape, RVec3{0, 20, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	dyn.SetOverrideMassProperties(OverrideMassPropertiesCalculateInertia)
+	dyn.SetMassPropertiesOverride(NewMassProperties(6))
+	dynID := bi.CreateAndAddBody(dyn, ActivationActivate)
+	dyn.Destroy()
+
+	kin := NewBodyCreationSettings(shape, RVec3{5, 20, 0}, QuatIdentity(), MotionTypeKinematic, layerMoving)
+	kinID := bi.CreateAndAddBody(kin, ActivationActivate)
+	kin.Destroy()
+
+	stat := NewBodyCreationSettings(shape, RVec3{0, 0, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+	statID := bi.CreateAndAddBody(stat, ActivationDontActivate)
+	stat.Destroy()
+
+	t.Cleanup(func() {
+		bi.RemoveAndDestroyBody(dynID)
+		bi.RemoveAndDestroyBody(kinID)
+		bi.RemoveAndDestroyBody(statID)
+	})
+
+	body := f.system.BodyPtr(dynID)
+	if got := body.InverseMass(); math.Abs(float64(got)-1.0/6.0) > 1e-4 {
+		t.Errorf("inverse mass = %v, want 1/6", got)
+	}
+
+	mp := body.MassProperties()
+	if math.Abs(float64(mp.Mass)-6) > 1e-3 {
+		t.Errorf("mass = %v, want 6", mp.Mass)
+	}
+	// A solid 1 m cube of mass m has inertia m/6 about every axis, so with the
+	// override at 6 the inertia must read 1 — the shape-derived value, not the
+	// identity NewMassProperties hands in.
+	for _, ax := range []struct {
+		name string
+		got  float32
+	}{
+		{"xx", mp.Inertia.Col[0].X},
+		{"yy", mp.Inertia.Col[1].Y},
+		{"zz", mp.Inertia.Col[2].Z},
+	} {
+		if math.Abs(float64(ax.got)-1) > 1e-3 {
+			t.Errorf("inertia %s = %v, want 1 (m/6 for this cube)", ax.name, ax.got)
+		}
+	}
+
+	// A kinematic body still carries mass (Jolt derives it from the shape's
+	// density) even though forces never move it, and a static body carries none.
+	// Neither may crash here.
+	if got := f.system.BodyPtr(kinID).InverseMass(); got <= 0 {
+		t.Errorf("kinematic inverse mass = %v, want a positive shape-derived value", got)
+	}
+	staticBody := f.system.BodyPtr(statID)
+	if got := staticBody.InverseMass(); got != 0 {
+		t.Errorf("static inverse mass = %v, want 0", got)
+	}
+	if got := staticBody.MassProperties().Mass; got != math.MaxFloat32 {
+		t.Errorf("static mass = %v, want Jolt's FLT_MAX", got)
+	}
+}

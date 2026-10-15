@@ -8,6 +8,7 @@ package joltc
 import "C"
 
 import (
+	"math"
 	"unsafe"
 
 	"github.com/akhenakh/gojoltc/internal/vecmath"
@@ -360,6 +361,64 @@ type Body struct {
 
 // ID returns the body's identifier.
 func (b *Body) ID() BodyID { return BodyID(C.JPH_Body_GetID(b.ptr)) }
+
+// InverseMass returns the body's inverse mass: 0 for a static body, which Jolt
+// gives no motion properties at all. Kinematic bodies do carry mass (Jolt
+// derives it from their shape's density) even though forces never move them, so
+// ask MotionType, not this being zero, whether a body is force-driven.
+func (b *Body) InverseMass() float32 {
+	mp := C.JPH_Body_GetMotionPropertiesUnchecked(b.ptr)
+	if mp == nil {
+		return 0
+	}
+	return float32(C.JPH_MotionProperties_GetInverseMassUnchecked(mp))
+}
+
+// MassProperties returns the mass and local-space inertia tensor Jolt is using
+// for the body, so a mass override can be verified and reported (telemetry).
+//
+// Jolt keeps a diagonal inverse inertia in the body's local frame, so the
+// inertia returned here is that reciprocal — the same form Jolt reconstructs
+// mass properties from. A static body has no motion properties and reports
+// Jolt's own FLT_MAX mass, which is how it says "infinite".
+func (b *Body) MassProperties() MassProperties {
+	mp := C.JPH_Body_GetMotionPropertiesUnchecked(b.ptr)
+	if mp == nil {
+		return MassProperties{
+			Mass:    maxFloat32,
+			Inertia: vecmath.Mat4Scale(vecmath.Vec3{X: maxFloat32, Y: maxFloat32, Z: maxFloat32}),
+		}
+	}
+
+	mass := float32(maxFloat32)
+	if invMass := float32(C.JPH_MotionProperties_GetInverseMassUnchecked(mp)); invMass != 0 {
+		mass = 1 / invMass
+	}
+
+	var diag C.JPH_Vec3
+	C.JPH_MotionProperties_GetInverseInertiaDiagonal(mp, &diag)
+	d := vec3FromC(diag)
+	return MassProperties{
+		Mass: mass,
+		Inertia: vecmath.Mat4Scale(vecmath.Vec3{
+			X: reciprocalOrMax(d.X),
+			Y: reciprocalOrMax(d.Y),
+			Z: reciprocalOrMax(d.Z),
+		}),
+	}
+}
+
+// maxFloat32 is Jolt's FLT_MAX: the mass it reports for a body it cannot move.
+const maxFloat32 = math.MaxFloat32
+
+// reciprocalOrMax returns 1/v, or maxFloat32 for a zero v — Jolt guards the same
+// reciprocal because a locked axis (AllowedDOFs) has no inertia at all.
+func reciprocalOrMax(v float32) float32 {
+	if v == 0 {
+		return maxFloat32
+	}
+	return 1 / v
+}
 
 // BodyPtr returns the body with the given id, or nil. The returned body is
 // borrowed: it is valid while the body lives in the system.
