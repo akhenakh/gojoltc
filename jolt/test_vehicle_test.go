@@ -136,6 +136,7 @@ func TestVehicleCollisionTesterCastCylinderCreate(t *testing.T) {
 }
 
 func TestVehicleEngineSettingsInit(t *testing.T) {
+	initVehicle(t)
 	settings := NewVehicleEngineSettings()
 	if settings.MaxRPM <= 0 {
 		t.Errorf("maxRPM = %v, want > 0", settings.MaxRPM)
@@ -146,6 +147,7 @@ func TestVehicleEngineSettingsInit(t *testing.T) {
 }
 
 func TestVehicleDifferentialSettingsInit(t *testing.T) {
+	initVehicle(t)
 	settings := NewVehicleDifferentialSettings()
 	if settings.LeftWheel < -1 {
 		t.Errorf("leftWheel = %d, want >= -1", settings.LeftWheel)
@@ -229,6 +231,7 @@ func TestVehicleWheeledControllerSettingsEngine(t *testing.T) {
 }
 
 func TestVehicleAntiRollBarInit(t *testing.T) {
+	initVehicle(t)
 	bar := NewVehicleAntiRollBar()
 	if bar.LeftWheel < 0 {
 		t.Errorf("leftWheel = %d, want >= 0", bar.LeftWheel)
@@ -236,6 +239,7 @@ func TestVehicleAntiRollBarInit(t *testing.T) {
 }
 
 func TestVehicleConstraintSettingsInit(t *testing.T) {
+	initVehicle(t)
 	settings := NewVehicleConstraintSettings()
 	f := settings.Forward
 	if f.X == 0 && f.Y == 0 && f.Z == 0 {

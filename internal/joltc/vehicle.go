@@ -142,6 +142,9 @@ func NewVehicleCollisionTesterCastCylinder(layer ObjectLayer, convexRadiusFracti
 func NewVehicleEngineSettings() VehicleEngineSettings {
 	var c C.JPH_VehicleEngineSettings
 	C.JPH_VehicleEngineSettings_Init(&c)
+	// Init allocates the default normalized-torque curve; the Go mirror does not
+	// carry it (see VehicleEngineSettings), so release it here.
+	defer C.JPH_LinearCurve_Destroy(c.normalizedTorque)
 	return engineFromC(c)
 }
 
@@ -190,6 +193,9 @@ func engineFromC(c C.JPH_VehicleEngineSettings) VehicleEngineSettings {
 func engineToC(s VehicleEngineSettings) C.JPH_VehicleEngineSettings {
 	// Initialize first: Init fills the normalizedTorque curve pointer, which
 	// SetEngine dereferences. Leaving it nil crashes.
+	//
+	// Ownership: the returned struct owns the curve that Init allocated, and the
+	// caller must release it once Jolt has copied the settings.
 	var c C.JPH_VehicleEngineSettings
 	C.JPH_VehicleEngineSettings_Init(&c)
 	c.maxTorque = C.float(s.MaxTorque)
@@ -321,6 +327,10 @@ func (s *WheeledVehicleControllerSettings) Engine() VehicleEngineSettings {
 // SetEngine sets the engine settings.
 func (s *WheeledVehicleControllerSettings) SetEngine(e VehicleEngineSettings) {
 	c := engineToC(e)
+	// JPH_WheeledVehicleControllerSettings_SetEngine copies the settings, including
+	// the normalized-torque curve, into Jolt's own settings, so the curve
+	// engineToC allocated is ours to release.
+	defer C.JPH_LinearCurve_Destroy(c.normalizedTorque)
 	C.JPH_WheeledVehicleControllerSettings_SetEngine(s.ptr, &c)
 }
 
