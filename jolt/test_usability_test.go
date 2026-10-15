@@ -1,6 +1,9 @@
 package jolt
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 // Behavioural tests for the usability pass: bodies driven through the extended
 // BodyInterface, plus mesh and height field level geometry.
@@ -146,5 +149,47 @@ func TestHeightFieldShapeHoldsBody(t *testing.T) {
 
 	if y := bi.Position(sphereID).Y; y < -0.5 {
 		t.Errorf("sphere fell through the height field: y = %v", y)
+	}
+}
+
+// Behavioural test for the mass override. Jolt's default density would give this
+// 1 m cube a mass of ~1000 kg, so imposing 11.3 kg is directly visible in the
+// response to a known impulse; OverrideMassPropertiesCalculateInertia means the
+// inertia must then come from the shape (scaled), not from the identity that
+// NewMassProperties hands in.
+func TestBodyMassOverride(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	const mass = 11.3
+	shape := NewBoxShape(Vec3{0.5, 0.5, 0.5}, 0) // no convex radius: a plain 1 m cube
+	defer shape.Destroy()
+
+	settings := NewBodyCreationSettings(shape, RVec3{0, 20, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	defer settings.Destroy()
+	if got := settings.OverrideMassProperties(); got != OverrideMassPropertiesCalculateMassAndInertia {
+		t.Fatalf("default override mode = %v, want CalculateMassAndInertia", got)
+	}
+	settings.SetOverrideMassProperties(OverrideMassPropertiesCalculateInertia)
+	settings.SetMassPropertiesOverride(NewMassProperties(mass))
+
+	id := bi.CreateAndAddBody(settings, ActivationActivate)
+	t.Cleanup(func() { bi.RemoveAndDestroyBody(id) })
+	body := f.system.BodyPtr(id)
+
+	// Linear: an impulse of `mass` N.s gives exactly 1 m/s to a mass-kg body.
+	bi.AddImpulse(id, Vec3{mass, 0, 0})
+	lin, _ := bi.GetLinearAndAngularVelocity(id)
+	if math.Abs(float64(lin.X)-1) > 1e-3 {
+		t.Errorf("vx after a %v N.s impulse = %v, want 1 (default density gives ~0.011)", float32(mass), lin.X)
+	}
+
+	// Angular: a solid 1 m cube of mass m has inertia m/6 about every axis, so a
+	// torque impulse of m/6 gives 1 rad/s. The identity inertia that was passed in
+	// would give ~1.88 instead.
+	body.AddAngularImpulse(Vec3{0, mass / 6, 0})
+	_, ang := bi.GetLinearAndAngularVelocity(id)
+	if math.Abs(float64(ang.Y)-1) > 1e-3 {
+		t.Errorf("wy after a %v N.m.s impulse = %v, want 1 (inertia must come from the shape)", float32(mass/6), ang.Y)
 	}
 }

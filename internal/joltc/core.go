@@ -324,6 +324,18 @@ func (b *BodyCreationSettings) SetRestitution(v float32) {
 	C.JPH_BodyCreationSettings_SetRestitution(b.ptr, C.float(v))
 }
 
+// SetMassPropertiesOverride sets the mass properties Jolt uses when
+// OverrideMassProperties is anything but
+// OverrideMassPropertiesCalculateMassAndInertia. With
+// OverrideMassPropertiesCalculateInertia only Mass is taken from it and Jolt
+// derives the inertia from the shape, scaled to that mass; with
+// OverrideMassPropertiesMassAndInertiaProvided both are taken as given (see
+// NewMassProperties).
+func (b *BodyCreationSettings) SetMassPropertiesOverride(mp MassProperties) {
+	c := massPropertiesToC(mp)
+	C.JPH_BodyCreationSettings_SetMassPropertiesOverride(b.ptr, &c)
+}
+
 // Restitution returns the restitution coefficient.
 func (b *BodyCreationSettings) Restitution() float32 {
 	return float32(C.JPH_BodyCreationSettings_GetRestitution(b.ptr))

@@ -201,6 +201,58 @@ func (s *HingeConstraintSettings) Destroy() {
 	}
 }
 
+// SetSpace sets the space the points and axes are expressed in. The default is
+// ConstraintSpaceWorldSpace; ConstraintSpaceLocalToBodyCOM makes them body-local
+// (relative to each body's center of mass), which is what a mechanism built from
+// several joints wants, since it survives the parts being repositioned.
+func (s *HingeConstraintSettings) SetSpace(space ConstraintSpace) {
+	s.ptr.space = C.JPH_ConstraintSpace(space)
+}
+
+// SetLocalSpacePoint1 sets the point body 1 pivots around; it is interpreted in
+// the space selected by SetSpace (body-local only when that is
+// ConstraintSpaceLocalToBodyCOM).
+func (s *HingeConstraintSettings) SetLocalSpacePoint1(p vecmath.RVec3) {
+	s.ptr.point1 = rvec3ToC(p)
+}
+
+// SetLocalSpacePoint2 sets the point body 2 pivots around, in the space selected
+// by SetSpace. For a hinge to be a hinge, both points must coincide in world
+// space when the constraint is created.
+func (s *HingeConstraintSettings) SetLocalSpacePoint2(p vecmath.RVec3) {
+	s.ptr.point2 = rvec3ToC(p)
+}
+
+// SetHingeAxis1 sets the axis body 1 rotates around.
+func (s *HingeConstraintSettings) SetHingeAxis1(a vecmath.Vec3) {
+	s.ptr.hingeAxis1 = vec3ToC(a)
+}
+
+// SetHingeAxis2 sets the axis body 2 rotates around. Both hinge axes must line
+// up in world space when the constraint is created.
+func (s *HingeConstraintSettings) SetHingeAxis2(a vecmath.Vec3) {
+	s.ptr.hingeAxis2 = vec3ToC(a)
+}
+
+// SetNormalAxis1 sets the axis perpendicular to the hinge axis that defines the
+// zero angle on body 1. HingeCurrentAngle is measured from it.
+func (s *HingeConstraintSettings) SetNormalAxis1(a vecmath.Vec3) {
+	s.ptr.normalAxis1 = vec3ToC(a)
+}
+
+// SetNormalAxis2 sets the zero-angle reference axis on body 2.
+func (s *HingeConstraintSettings) SetNormalAxis2(a vecmath.Vec3) {
+	s.ptr.normalAxis2 = vec3ToC(a)
+}
+
+// SetInitialLimits sets the angle limits the constraint is created with, so a
+// joint can start clamped without a further HingeSetLimits call. Angles are
+// radians, measured around the hinge axis from the normal axis.
+func (s *HingeConstraintSettings) SetInitialLimits(min, max float32) {
+	s.ptr.limitsMin = C.float(min)
+	s.ptr.limitsMax = C.float(max)
+}
+
 // Create builds the hinge constraint between two bodies.
 func (s *HingeConstraintSettings) Create(b1, b2 *Body) *Constraint {
 	return &Constraint{ptr: (*C.JPH_Constraint)(unsafe.Pointer(C.JPH_HingeConstraint_Create(s.ptr, b1.ptr, b2.ptr)))}
@@ -443,6 +495,31 @@ func (s *GearConstraintSettings) Destroy() {
 	}
 }
 
+// SetSpace sets the space the hinge axes are expressed in (world space by
+// default, see HingeConstraintSettings.SetSpace).
+func (s *GearConstraintSettings) SetSpace(space ConstraintSpace) {
+	s.ptr.space = C.JPH_ConstraintSpace(space)
+}
+
+// SetHingeAxis1 sets the axis body 1 rotates around.
+func (s *GearConstraintSettings) SetHingeAxis1(a vecmath.Vec3) {
+	s.ptr.hingeAxis1 = vec3ToC(a)
+}
+
+// SetHingeAxis2 sets the axis body 2 rotates around.
+func (s *GearConstraintSettings) SetHingeAxis2(a vecmath.Vec3) {
+	s.ptr.hingeAxis2 = vec3ToC(a)
+}
+
+// SetRatio sets the gear ratio. Jolt defines it as
+// rotation1(t) = -ratio * rotation2(t), so a ratio of 1 makes two bodies turn
+// equal and opposite — which is how a rocker-bogie differential pivot is built —
+// and a negative ratio makes them turn the same way. (Jolt's own
+// SetRatio(numTeeth1, numTeeth2) helper computes numTeeth2/numTeeth1 here.)
+func (s *GearConstraintSettings) SetRatio(ratio float32) {
+	s.ptr.ratio = C.float(ratio)
+}
+
 // Create builds the gear constraint between two bodies.
 func (s *GearConstraintSettings) Create(b1, b2 *Body) *Constraint {
 	return &Constraint{ptr: (*C.JPH_Constraint)(unsafe.Pointer(C.JPH_GearConstraint_Create(s.ptr, b1.ptr, b2.ptr)))}
@@ -451,4 +528,14 @@ func (s *GearConstraintSettings) Create(b1, b2 *Body) *Constraint {
 // GearTotalLambda returns the total gear impulse.
 func (c *Constraint) GearTotalLambda() float32 {
 	return float32(C.JPH_GearConstraint_GetTotalLambda((*C.JPH_GearConstraint)(unsafe.Pointer(c.ptr))))
+}
+
+// GearSetConstraints tells the gear which two hinges it relates, so it reads
+// their angles. Jolt's gear constraint "needs to be used in conjunction with a
+// two hinge constraints": without them it still couples the angular velocities,
+// but its position correction — the part that keeps the two hinges locked to the
+// ratio over time — is skipped. Both must be hinge constraints; Jolt asserts on
+// anything else.
+func (c *Constraint) GearSetConstraints(gear1, gear2 *Constraint) {
+	C.JPH_GearConstraint_SetConstraints((*C.JPH_GearConstraint)(unsafe.Pointer(c.ptr)), gear1.ptr, gear2.ptr)
 }

@@ -14,6 +14,10 @@ The API surface exercised by the upstream joltc test suite is wrapped, and a
 usability pass makes it actually usable in games:
 
 - **Constraints** can be attached to a world (`AddConstraint`/`RemoveConstraint`).
+- **Joints you can aim**: hinge settings carry explicit points, hinge/normal axes
+  and initial limits, and a **gear constraint** couples two hinges — a rocker-bogie
+  differential pivot. A body can also take a real mass while Jolt still derives the
+  inertia from its shape.
 - **Wheeled vehicles** drive: chassis + `NewWheelSettingsWV` wheels + a controller
   (with at least one differential), added as both a constraint and a step listener,
   with **tire friction curves** (`LinearCurve`) for surface-dependent slip.

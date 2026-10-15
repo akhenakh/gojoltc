@@ -78,7 +78,7 @@ func (s *Shape) InnerRadius() float32 { return float32(C.JPH_Shape_GetInnerRadiu
 func (s *Shape) MassProperties() MassProperties {
 	var o C.JPH_MassProperties
 	C.JPH_Shape_GetMassProperties(s.ptr, &o)
-	return MassProperties{Mass: float32(o.mass), Inertia: mat4FromC(o.inertia)}
+	return massPropertiesFromC(o)
 }
 
 // Volume returns the shape's volume.

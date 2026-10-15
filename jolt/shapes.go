@@ -32,6 +32,15 @@ type (
 	EmptyShapeSettings = joltc.EmptyShapeSettings
 )
 
+// NewMassProperties returns mass properties carrying a mass and an identity
+// inertia. Pair it with OverrideMassPropertiesCalculateInertia to impose a real
+// mass while Jolt still derives the inertia from the shape (and scales it to
+// that mass); the inertia here is only used by
+// OverrideMassPropertiesMassAndInertiaProvided.
+func NewMassProperties(mass float32) MassProperties {
+	return MassProperties{Mass: mass, Inertia: Mat4Identity()}
+}
+
 // NewTriangleShape creates a triangle shape.
 func NewTriangleShape(v1, v2, v3 Vec3, convexRadius float32) *Shape {
 	return joltc.NewTriangleShape(v1, v2, v3, convexRadius)

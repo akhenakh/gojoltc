@@ -68,6 +68,14 @@ func planeFromC(c C.JPH_Plane) vecmath.Plane {
 	return vecmath.Plane{Normal: vec3FromC(c.normal), Distance: float32(c.distance)}
 }
 
+func massPropertiesToC(m MassProperties) C.JPH_MassProperties {
+	return C.JPH_MassProperties{mass: C.float(m.Mass), inertia: mat4ToC(m.Inertia)}
+}
+
+func massPropertiesFromC(c C.JPH_MassProperties) MassProperties {
+	return MassProperties{Mass: float32(c.mass), Inertia: mat4FromC(c.inertia)}
+}
+
 func colorToC(c vecmath.Color) C.JPH_Color { return C.JPH_Color(c) }
 
 func colorFromC(c C.JPH_Color) vecmath.Color { return vecmath.Color(c) }
