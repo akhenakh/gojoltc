@@ -28,6 +28,8 @@ usability pass makes it actually usable in games:
 - **Sensing queries**: filtered raycasts (closest hit and all hits), point and
   shape overlap (with proximity volumes), and shape sweeps —
   `BroadPhaseLayerFilter`/`ObjectLayerFilter`/`BodyFilter`/`ShapeFilter` as Go callbacks.
+  A **ray bank** sweeps in one cgo crossing (`CastRaysFiltered`), which is the
+  path for a LIDAR or a rangefinder array.
 - **Listeners** (contact/activation/step) and a **debug renderer**.
 - **Soft bodies**, characters, skeletons/ragdolls.
 - **Solver tuning** (`PhysicsSettings`), **collision groups**, physics materials.
@@ -132,7 +134,10 @@ The hot paths stay on the C heap where it matters:
 machine with 1024 dynamic bodies: a full position sweep is ~11µs with 0
 allocations via `PositionsInto` (one cgo crossing for the whole sweep), versus
 ~49µs with 1024 allocations via the per-call `Position`; `Update` with 512
-bodies is allocation-free.
+bodies is allocation-free. Sensor sweeps follow the same rule — 256 rays cost
+44µs with 0 allocations via `CastRaysFiltered`, against 61µs/768 allocations
+per-ray through the native cast and 106µs/1535 allocations through the
+collector.
 
 ## Examples
 
