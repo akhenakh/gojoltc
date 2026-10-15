@@ -39,6 +39,12 @@ if [[ ! -f "$joltc_src/include/joltc.h" || ! -f "$jolt_src/Build/CMakeLists.txt"
   exit 1
 fi
 
+# Rebuild only when something that affects the archive changed: the submodule
+# revisions and the build options. Without this, bumping a submodule silently
+# keeps testing the previous archive (make cannot see inside it).
+joltc_rev="$(git -C "$joltc_src" rev-parse HEAD 2>/dev/null || echo unknown)"
+jolt_rev="$(git -C "$jolt_src" rev-parse HEAD 2>/dev/null || echo unknown)"
+
 : "${JOLTC_BUILD_TYPE:=Release}"
 : "${JOLTC_DEBUG_RENDERER:=ON}"
 : "${JOLTC_PROFILER:=OFF}"
@@ -52,6 +58,14 @@ if [[ "$JOLTC_SANITIZE" != "OFF" ]]; then
   echo ">> sanitizers: $JOLTC_SANITIZE"
   extra+=("-DCMAKE_C_FLAGS=-fsanitize=$JOLTC_SANITIZE -fno-omit-frame-pointer -g")
   extra+=("-DCMAKE_CXX_FLAGS=-fsanitize=$JOLTC_SANITIZE -fno-omit-frame-pointer -g")
+fi
+
+build_rev="joltc=$joltc_rev jolt=$jolt_rev variant=$variant type=$JOLTC_BUILD_TYPE sanitize=$JOLTC_SANITIZE \
+debug_renderer=$JOLTC_DEBUG_RENDERER profiler=$JOLTC_PROFILER asserts=$JOLTC_ASSERTS avx512=$JOLTC_AVX512 lto=$JOLTC_LTO"
+stamp="$out_dir/.build-rev"
+if [[ -f "$out_dir/$libname" && -f "$out_dir/libJolt.a" && -f "$stamp" && "$(cat "$stamp")" == "$build_rev" ]]; then
+  echo ">> $out_dir/$libname is up to date (joltc ${joltc_rev:0:8}, jolt ${jolt_rev:0:8}, $variant, sanitize=$JOLTC_SANITIZE)"
+  exit 0
 fi
 
 echo ">> configuring joltc ($variant, $JOLTC_BUILD_TYPE)"
@@ -103,4 +117,5 @@ fi
 mkdir -p "$out_dir"
 cp -f "$found" "$out_dir/$libname"
 cp -f "$jolt_lib" "$out_dir/libJolt.a"
+echo "$build_rev" > "$stamp"
 echo ">> built $out_dir/$libname (+ libJolt.a)"

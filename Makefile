@@ -13,21 +13,19 @@ all: check
 
 # --- Native library -------------------------------------------------------
 
-native: $(SINGLE_LIB)
+# The scripts decide whether a rebuild is needed (submodule revisions and build
+# options are recorded next to the archive), so these always run.
+native:
+	scripts/build_native.sh single
 
-native-double: $(DOUBLE_LIB)
+native-double:
+	scripts/build_native.sh double
 
 native-sanitize:
 	JOLTC_SANITIZE=address,undefined scripts/build_native.sh single
 
 sbom:
 	scripts/gen_sbom.sh
-
-$(SINGLE_LIB):
-	scripts/build_native.sh single
-
-$(DOUBLE_LIB):
-	scripts/build_native.sh double
 
 native-clean:
 	rm -rf internal/native
@@ -64,21 +62,25 @@ generate:
 generate-check:
 	$(GO) run ./gen -check
 
+# -count=1: the native archive is not part of Go's test cache key, so a rebuilt
+# library would otherwise report a cached (stale) pass.
 test: native
-	$(GO) test $(GOFLAGS) ./...
+	$(GO) test -count=1 $(GOFLAGS) ./...
 
 test-double: native-double
-	$(GO) test $(GOFLAGS) -tags jolt_double ./...
+	$(GO) test -count=1 $(GOFLAGS) -tags jolt_double ./...
 
 bench: native
 	$(GO) test $(GOFLAGS) -run '^$$' -bench . -benchmem ./jolt/
 
 test-sanitize: native-sanitize
 	# Leak detection is off: third_party/joltc leaks a default EmptyShapeSettings
-	# in JPH_CharacterBaseSettings_Init that cannot be freed from outside. ASan
-	# still catches memory errors and UBSan catches undefined behaviour.
+	# in JPH_CharacterBaseSettings_Init that cannot be freed from outside, the
+	# suite has a handful of its own leaks to triage, and the frames are
+	# unsymbolized so no leak: suppression can be written by name. ASan still
+	# catches memory errors and UBSan catches undefined behaviour.
 	ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
-	$(GO) test $(GOFLAGS) -tags joltc_asan -asan ./...
+	$(GO) test -count=1 $(GOFLAGS) -tags joltc_asan -asan ./...
 
 build-nocgo:
 	@pkgs="$$($(GO) list ./... | grep -v '/examples/')"; \
