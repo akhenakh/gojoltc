@@ -4,7 +4,7 @@
   "name": "github.com/akhenakh/gojoltc",
   "documentNamespace": "https://github.com/akhenakh/gojoltc/sbom",
   "creationInfo": {
-    "created": "2026-10-14T19:38:45Z",
+    "created": "2026-10-15T16:12:21Z",
     "creators": ["Tool: scripts/gen_sbom.sh"]
   },
   "packages": [
@@ -17,7 +17,7 @@
     },
     {
       "name": "joltc",
-      "versionInfo": "886e088675bae3a086f8318c7803f8ee962c2f2c",
+      "versionInfo": "2bbcf73b1bec261e0351814662922f1b4784454c",
       "downloadLocation": "https://github.com/amerkoleci/joltc",
       "licenseConcluded": "MIT",
       "comment": "C API for JoltPhysics, vendored as a git submodule (third_party/joltc)."
