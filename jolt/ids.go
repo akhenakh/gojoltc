@@ -19,3 +19,6 @@ type (
 	// CharacterID identifies a character.
 	CharacterID = joltc.CharacterID
 )
+
+// InvalidBodyID is Jolt's "no body" id. Query results use it to report a miss.
+const InvalidBodyID = joltc.InvalidBodyID

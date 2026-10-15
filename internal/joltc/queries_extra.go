@@ -7,6 +7,8 @@ package joltc
 
 extern bool joltcNarrowPhaseCastRay(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* origin, const JPH_Vec3* dir, const JPH_RayCastSettings* s, uintptr_t ud,
 	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf);
+extern uint32_t joltcNarrowPhaseCastRays(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* origins, const JPH_Vec3* dirs, uint32_t count,
+	JPH_RayCastResult* out, const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf);
 extern bool joltcNarrowPhaseCollidePoint(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* point, uintptr_t ud,
 	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf);
 extern bool joltcNarrowPhaseCollideShape(const JPH_NarrowPhaseQuery* q, const JPH_Shape* shape, const JPH_Vec3* scale, const JPH_RMat4* comTransform,
@@ -76,6 +78,10 @@ func (s ShapeCastSettings) toC() C.JPH_ShapeCastSettings {
 	return c
 }
 
+func rayCastResultFromC(r C.JPH_RayCastResult) RayCastResult {
+	return RayCastResult{BodyID: BodyID(r.bodyID), Fraction: float32(r.fraction), SubShapeID2: SubShapeID(r.subShapeID2)}
+}
+
 // --- collectors --------------------------------------------------------------
 
 type rayCollector struct {
@@ -92,7 +98,7 @@ func goJoltcCastRayCollector(userData unsafe.Pointer, r *C.JPH_RayCastResult) C.
 	if !ok {
 		return 1
 	}
-	hit := RayCastResult{BodyID: BodyID(r.bodyID), Fraction: float32(r.fraction), SubShapeID2: SubShapeID(r.subShapeID2)}
+	hit := rayCastResultFromC(*r)
 	if !c.hasClosest || hit.Fraction < c.closest.Fraction {
 		c.closest, c.hasClosest = hit, true
 	}
@@ -156,6 +162,66 @@ func goJoltcCastShapeCollector(userData unsafe.Pointer, r *C.JPH_ShapeCastResult
 // --- queries -----------------------------------------------------------------
 
 // CastRayAll returns every hit along the ray, in the order reported by Jolt.
+// CastRayFiltered returns the closest hit along a ray using Jolt's native
+// filter-only cast: the closest-hit search and its early-out happen inside Jolt,
+// with no collector trampoline and no cgo.Handle per query. That is the cheap
+// path for a rangefinder or a per-frame sensor sweep; CastRayAll is the
+// equivalent for the necessarily per-hit main-thread work (see CastRaysFiltered
+// for the batched LIDAR case).
+//
+// It is narrower than CastRayClosest: Jolt's native cast takes no
+// RayCastSettings (so no early-out fraction or back-face mode) and no shape
+// filter. If opts carries a shape filter this falls back to CastRayClosest with
+// Jolt's default settings, so the result stays correct.
+func (q *NarrowPhaseQuery) CastRayFiltered(origin vecmath.RVec3, direction vecmath.Vec3, opts *QueryOptions) (RayCastResult, bool) {
+	if opts != nil && opts.Shape != nil {
+		return q.CastRayClosest(origin, direction, DefaultRayCastSettings(), opts)
+	}
+	o := rvec3ToC(origin)
+	d := vec3ToC(direction)
+	bp, ol, bf, _ := opts.cfilters()
+	var hit C.JPH_RayCastResult
+	if !bool(C.JPH_NarrowPhaseQuery_CastRay(q.ptr, &o, &d, &hit, bp, ol, bf)) {
+		return RayCastResult{}, false
+	}
+	return rayCastResultFromC(hit), true
+}
+
+// CastRaysFiltered sweeps many rays in a single cgo crossing — a LIDAR or a
+// sensor bank — writing one result per ray into out and returning how many hit.
+// A ray that missed leaves InvalidBodyID in out[i].BodyID (Jolt's own sentinel),
+// so a caller can filter results without a second pass over hit flags.
+//
+// Each ray takes the same native path as CastRayFiltered: no RayCastSettings and
+// no shape filter (passing both per ray would need the collector path, which is
+// what the fallback does). Filters, when supplied, are the callback-backed ones,
+// so a body filter still calls into Go once per candidate body per ray; a LIDAR
+// that can avoid filtering entirely stays inside Jolt for the whole sweep.
+func (q *NarrowPhaseQuery) CastRaysFiltered(origins []vecmath.RVec3, directions []vecmath.Vec3, out []RayCastResult, opts *QueryOptions) int {
+	n := min(len(origins), len(directions), len(out))
+	if n == 0 {
+		return 0
+	}
+	bp, ol, bf, sf := opts.cfilters()
+	if sf != nil {
+		hits := 0
+		for i := range n {
+			out[i] = RayCastResult{BodyID: InvalidBodyID}
+			if r, ok := q.CastRayClosest(origins[i], directions[i], DefaultRayCastSettings(), opts); ok {
+				out[i] = r
+				hits++
+			}
+		}
+		return hits
+	}
+	// out is reinterpreted as the C result array only behind the size assertion
+	// in body_reads.go.
+	hits := C.joltcNarrowPhaseCastRays(q.ptr,
+		(*C.JPH_RVec3)(unsafe.Pointer(&origins[0])), (*C.JPH_Vec3)(unsafe.Pointer(&directions[0])), C.uint32_t(n),
+		(*C.JPH_RayCastResult)(unsafe.Pointer(&out[0])), bp, ol, bf)
+	return int(hits)
+}
+
 func (q *NarrowPhaseQuery) CastRayAll(origin vecmath.RVec3, direction vecmath.Vec3, settings RayCastSettings, opts *QueryOptions) []RayCastResult {
 	o := rvec3ToC(origin)
 	d := vec3ToC(direction)

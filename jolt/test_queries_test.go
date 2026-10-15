@@ -1,6 +1,9 @@
 package jolt
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 // sensorScene builds a static floor (NON_MOVING) and a dynamic box (MOVING)
 // directly above it, returning the system, the interface and both body ids.
@@ -162,5 +165,76 @@ func TestCastShapeSweep(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("sweep did not report the box %d with a fraction in (0,1): %+v", boxID, hits)
+	}
+}
+
+// The native fast path must agree with the collector path ray for ray: it is the
+// same query with the closest-hit early-out left to Jolt (no per-hit callback),
+// and it is what a LIDAR sweep uses.
+func TestCastRaysFiltered(t *testing.T) {
+	f, _, floorID, boxID := sensorScene(t)
+	query := f.system.NarrowPhaseQuery()
+
+	const n = 32
+	origins := make([]RVec3, n)
+	dirs := make([]Vec3, n)
+	for i := range n {
+		// A fan of rays from above: some hit the floor, some the box, some miss.
+		x := Real(i)*0.35 - 5
+		origins[i] = RVec3{x, 10, 0}
+		dirs[i] = Vec3{0, -20, 0} // the direction's length is the ray's
+	}
+	out := make([]RayCastResult, n)
+
+	hits := query.CastRaysFiltered(origins, dirs, out, nil)
+	if hits == 0 {
+		t.Fatal("no ray hit anything")
+	}
+	agreed := 0
+	for i := range n {
+		want, ok := query.CastRayClosest(origins[i], dirs[i], DefaultRayCastSettings(), nil)
+		if !ok {
+			if out[i].BodyID != InvalidBodyID {
+				t.Errorf("ray %d: batch hit %v, collector missed", i, out[i].BodyID)
+			}
+			continue
+		}
+		if !ok || out[i].BodyID != want.BodyID || math.Abs(float64(out[i].Fraction-want.Fraction)) > 1e-4 {
+			t.Errorf("ray %d: batch (%v, %v) != collector (%v, %v)", i, out[i].BodyID, out[i].Fraction, want.BodyID, want.Fraction)
+		}
+		agreed++
+	}
+	if hits != agreed {
+		t.Errorf("batch reported %d hits, the collector agrees on %d", hits, agreed)
+	}
+
+	// The single-ray fast path agrees, and honours a body filter: with the floor
+	// excluded, the box is hit instead, and away from the box nothing is left.
+	one, ok := query.CastRayFiltered(RVec3{0, 10, 0}, Vec3{0, -20, 0}, nil)
+	if !ok || one.BodyID != boxID {
+		t.Errorf("CastRayFiltered = (%v, %v), want the box %d", one.BodyID, ok, boxID)
+	}
+	floorOut := NewBodyFilter(&BodyFilterCallbacks{
+		ShouldCollide:       func(id BodyID) bool { return id != floorID },
+		ShouldCollideLocked: func(body *Body) bool { return body.ID() != floorID },
+	})
+	defer floorOut.Destroy()
+	opts := &QueryOptions{Body: floorOut}
+	if hit, ok := query.CastRayFiltered(RVec3{0, 10, 0}, Vec3{0, -20, 0}, opts); !ok || hit.BodyID != boxID {
+		t.Errorf("with the floor excluded the fast path = (%v, %v), want the box %d", hit.BodyID, ok, boxID)
+	}
+	if _, ok := query.CastRayFiltered(RVec3{-5, 10, 0}, Vec3{0, -20, 0}, opts); ok {
+		t.Error("the fast path still hit the excluded floor")
+	}
+
+	// A shape filter is not part of the native cast, so it falls back to the
+	// collector path rather than silently ignoring the filter.
+	shapeFilter := NewShapeFilter(&ShapeFilterCallbacks{
+		ShouldCollide: func(shape2 *Shape, subShapeID2 SubShapeID) bool { return true },
+	})
+	defer shapeFilter.Destroy()
+	fallback, ok := query.CastRayFiltered(RVec3{0, 10, 0}, Vec3{0, -20, 0}, &QueryOptions{Shape: shapeFilter})
+	if !ok || fallback.BodyID != boxID {
+		t.Errorf("shape-filtered fallback = (%v, %v), want the box %d", fallback.BodyID, ok, boxID)
 	}
 }

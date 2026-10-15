@@ -29,6 +29,8 @@ var (
 	_ [0]struct{} = [int(unsafe.Sizeof(vecmath.Mat4{}) - unsafe.Sizeof(C.JPH_Mat4{}))]struct{}{}
 	_ [0]struct{} = [int(unsafe.Sizeof(vecmath.RVec3{}) - unsafe.Sizeof(C.JPH_RVec3{}))]struct{}{}
 	_ [0]struct{} = [int(unsafe.Sizeof(vecmath.RMat4{}) - unsafe.Sizeof(C.JPH_RMat4{}))]struct{}{}
+	// RayCastResult is reinterpreted as JPH_RayCastResult by the batched ray sweep.
+	_ [0]struct{} = [int(unsafe.Sizeof(RayCastResult{}) - unsafe.Sizeof(C.JPH_RayCastResult{}))]struct{}{}
 )
 
 // The *Into methods read or write many bodies in a single cgo call (the C loop

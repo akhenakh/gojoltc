@@ -177,6 +177,25 @@ bool joltcNarrowPhaseCastRay(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* ori
 	return JPH_NarrowPhaseQuery_CastRay2(q, origin, dir, s, joltcCastRayCollTramp, (void*)ud, bp, ol, bf, sf);
 }
 
+/* Sweep many rays with Jolt's native closest-hit cast (no collector callbacks, no
+   per-ray cgo crossing). Misses are marked with Jolt's invalid body id. */
+uint32_t joltcNarrowPhaseCastRays(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* origins, const JPH_Vec3* dirs, uint32_t count,
+	JPH_RayCastResult* out, const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf)
+{
+	uint32_t hits = 0;
+	for (uint32_t i = 0; i < count; i++)
+	{
+		out[i].bodyID = (JPH_BodyID)0xffffffffu;
+		JPH_RayCastResult r;
+		if (JPH_NarrowPhaseQuery_CastRay(q, &origins[i], &dirs[i], &r, bp, ol, bf))
+		{
+			out[i] = r;
+			hits++;
+		}
+	}
+	return hits;
+}
+
 bool joltcNarrowPhaseCollidePoint(const JPH_NarrowPhaseQuery* q, const JPH_RVec3* point, uintptr_t ud,
 	const JPH_BroadPhaseLayerFilter* bp, const JPH_ObjectLayerFilter* ol, const JPH_BodyFilter* bf, const JPH_ShapeFilter* sf)
 {

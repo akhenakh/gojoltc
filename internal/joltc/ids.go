@@ -5,6 +5,10 @@ package joltc
 // BodyID identifies a body within a physics system.
 type BodyID uint32
 
+// InvalidBodyID is Jolt's "no body" id. Query results use it to report a miss
+// (see NarrowPhaseQuery.CastRaysFiltered).
+const InvalidBodyID BodyID = 0xFFFFFFFF
+
 // SubShapeID identifies a sub-shape within a compound shape.
 type SubShapeID uint32
 

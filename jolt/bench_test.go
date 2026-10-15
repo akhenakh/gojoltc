@@ -122,3 +122,49 @@ func BenchmarkEnumerateBodiesInto(b *testing.B) {
 		_ = system.BodyIDsInto(buf)
 	}
 }
+
+// BenchmarkRaySweep compares sweeping a sensor bank of rays (a LIDAR pattern)
+// three ways: per-ray through the collector, per-ray through Jolt's native cast,
+// and the batched native sweep. It reuses the helper's body grid as targets, so
+// the body count stays within the system it was sized for.
+func BenchmarkRaySweep(b *testing.B) {
+	system, _, ids := newBenchSystem(b, 256)
+	system.OptimizeBroadPhase()
+
+	query := system.NarrowPhaseQuery()
+	bi := system.BodyInterface()
+
+	// Rays straight down at the grid of spheres sitting at y = 10.
+	const rays = 256
+	origins := make([]RVec3, rays)
+	dirs := make([]Vec3, rays)
+	out := make([]RayCastResult, rays)
+	for i := range rays {
+		origins[i] = bi.Position(ids[i])
+		origins[i].Y += 2
+		dirs[i] = Vec3{0, -20, 0}
+	}
+
+	b.Run("collector-per-ray", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			for i := range rays {
+				query.CastRayClosest(origins[i], dirs[i], DefaultRayCastSettings(), nil)
+			}
+		}
+	})
+	b.Run("native-per-ray", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			for i := range rays {
+				query.CastRayFiltered(origins[i], dirs[i], nil)
+			}
+		}
+	})
+	b.Run("native-batch", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			query.CastRaysFiltered(origins, dirs, out, nil)
+		}
+	})
+}
