@@ -79,8 +79,15 @@ type ContactSettings struct{ ptr *C.JPH_ContactSettings }
 // SetFriction sets the combined friction.
 func (s *ContactSettings) SetFriction(v float32) { s.ptr.combinedFriction = C.float(v) }
 
+// Friction returns the combined friction Jolt worked out for this contact, so a
+// callback can scale it (sand, dirt) instead of overwriting it blindly.
+func (s *ContactSettings) Friction() float32 { return float32(s.ptr.combinedFriction) }
+
 // SetRestitution sets the combined restitution.
 func (s *ContactSettings) SetRestitution(v float32) { s.ptr.combinedRestitution = C.float(v) }
+
+// Restitution returns the combined restitution of this contact.
+func (s *ContactSettings) Restitution() float32 { return float32(s.ptr.combinedRestitution) }
 
 // SetIsSensor marks the contact as a sensor (no impulses applied).
 func (s *ContactSettings) SetIsSensor(v bool) {
@@ -90,6 +97,9 @@ func (s *ContactSettings) SetIsSensor(v bool) {
 		s.ptr.isSensor = 0
 	}
 }
+
+// IsSensor reports whether the contact is currently a sensor.
+func (s *ContactSettings) IsSensor() bool { return s.ptr.isSensor != 0 }
 
 // SetInvMassScale1 sets the inverse mass scale of body 1 (0 makes it immovable
 // by this contact).

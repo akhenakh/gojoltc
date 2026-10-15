@@ -1,6 +1,7 @@
 package jolt
 
 import (
+	"math"
 	"sync/atomic"
 	"testing"
 )
@@ -145,5 +146,66 @@ func TestDebugRendererDrawBodies(t *testing.T) {
 
 	if lines.Load() == 0 && triangles.Load() == 0 {
 		t.Fatal("debug renderer received no geometry")
+	}
+}
+
+// A contact callback can only scale the friction it finds if it can read it; the
+// combined value is what Jolt actually applies.
+func TestContactSettingsReadBack(t *testing.T) {
+	f := newPhysicsFixture(t)
+	bi := f.system.BodyInterface()
+
+	var read, afterSet float32
+	var sensorBefore, sensorAfter bool
+	var seen atomic.Int64
+	listener := NewContactListener(&ContactListenerCallbacks{
+		OnAdded: func(body1, body2 *Body, manifold *ContactManifold, cs *ContactSettings) {
+			if seen.Add(1) != 1 {
+				return
+			}
+			read = cs.Friction()
+			afterSet = cs.Friction() * 0.6
+			sensorBefore = cs.IsSensor()
+			cs.SetFriction(afterSet)
+			afterSet = cs.Friction()
+			cs.SetIsSensor(true)
+			sensorAfter = cs.IsSensor()
+		},
+	})
+	f.system.SetContactListener(listener)
+	t.Cleanup(func() { f.system.SetContactListener(nil); listener.Destroy() })
+
+	floorShape := NewBoxShape(Vec3{20, 1, 20}, DefaultConvexRadius)
+	defer floorShape.Destroy()
+	fs := NewBodyCreationSettings(floorShape, RVec3{0, -1, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+	fs.SetFriction(1)
+	floorID := bi.CreateAndAddBody(fs, ActivationDontActivate)
+	fs.Destroy()
+	t.Cleanup(func() { bi.RemoveAndDestroyBody(floorID) })
+
+	sphereShape := NewSphereShape(0.5)
+	defer sphereShape.Destroy()
+	ss := NewBodyCreationSettings(sphereShape, RVec3{0, 2, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+	ss.SetFriction(1) // same as the floor, so the combination is 1 whatever the rule
+	sphereID := bi.CreateAndAddBody(ss, ActivationActivate)
+	ss.Destroy()
+	t.Cleanup(func() { bi.RemoveAndDestroyBody(sphereID) })
+
+	f.system.OptimizeBroadPhase()
+	for range 120 {
+		f.system.Update(1.0/60.0, 1, f.jobSystem)
+	}
+
+	if seen.Load() == 0 {
+		t.Fatal("no contact was reported")
+	}
+	if math.Abs(float64(read)-1) > 1e-3 {
+		t.Errorf("combined friction = %v, want 1 (both bodies set to 1)", read)
+	}
+	if math.Abs(float64(afterSet)-0.6) > 1e-3 {
+		t.Errorf("friction after scaling = %v, want 0.6", afterSet)
+	}
+	if sensorBefore || !sensorAfter {
+		t.Errorf("sensor flag: before %v, after %v (want false then true)", sensorBefore, sensorAfter)
 	}
 }
