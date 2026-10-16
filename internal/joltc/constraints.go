@@ -468,6 +468,85 @@ func (s *SwingTwistConstraintSettings) Destroy() {
 	}
 }
 
+// SetSpace sets the space the positions and axes are expressed in. The default is
+// ConstraintSpaceWorldSpace; ConstraintSpaceLocalToBodyCOM makes them body-local,
+// measured from each body's **center of mass** (not its origin — an offset shape
+// or a pivot away from the center of mass will otherwise be off by that distance).
+func (s *SwingTwistConstraintSettings) SetSpace(space ConstraintSpace) {
+	s.ptr.space = C.JPH_ConstraintSpace(space)
+}
+
+// SetPosition1 sets the pivot on body 1, in the space selected by SetSpace. Both
+// positions must coincide in world space when the constraint is created, or the
+// solver starts from a permanent error.
+func (s *SwingTwistConstraintSettings) SetPosition1(p vecmath.RVec3) {
+	s.ptr.position1 = rvec3ToC(p)
+}
+
+// SetPosition2 sets the pivot on body 2, which must land on the same world point
+// as SetPosition1.
+func (s *SwingTwistConstraintSettings) SetPosition2(p vecmath.RVec3) {
+	s.ptr.position2 = rvec3ToC(p)
+}
+
+// SetTwistAxis1 sets the axis body 1 twists around. Twist rotates about it; swing
+// tilts away from it. Both twist axes must line up in world space at creation.
+func (s *SwingTwistConstraintSettings) SetTwistAxis1(a vecmath.Vec3) {
+	s.ptr.twistAxis1 = vec3ToC(a)
+}
+
+// SetTwistAxis2 sets the twist axis on body 2.
+func (s *SwingTwistConstraintSettings) SetTwistAxis2(a vecmath.Vec3) {
+	s.ptr.twistAxis2 = vec3ToC(a)
+}
+
+// SetPlaneAxis1 sets the axis perpendicular to the twist axis that the swing cone
+// is measured from, on body 1. Both plane axes must line up in world space at
+// creation.
+func (s *SwingTwistConstraintSettings) SetPlaneAxis1(a vecmath.Vec3) {
+	s.ptr.planeAxis1 = vec3ToC(a)
+}
+
+// SetPlaneAxis2 sets the swing cone's reference axis on body 2.
+func (s *SwingTwistConstraintSettings) SetPlaneAxis2(a vecmath.Vec3) {
+	s.ptr.planeAxis2 = vec3ToC(a)
+}
+
+// SetSwingType selects the shape the swing limits bound: a cone
+// (SwingTypeCone) or an ellipse/pyramid (SwingTypePyramid), which uses the plane
+// and normal half cone angles independently.
+func (s *SwingTwistConstraintSettings) SetSwingType(t SwingType) {
+	s.ptr.swingType = C.JPH_SwingType(t)
+}
+
+// SetNormalHalfConeAngle sets the swing limit about the plane axis, in radians:
+// for a rod whose twist axis runs along its length and whose plane axis points
+// up, the limit on it yawing side to side. The default is 0 — the swing is
+// *locked* — so a rod end has to widen both cone angles before it will move at
+// all.
+func (s *SwingTwistConstraintSettings) SetNormalHalfConeAngle(radians float32) {
+	s.ptr.normalHalfConeAngle = C.float(radians)
+}
+
+// SetPlaneHalfConeAngle sets the swing limit about the normal axis (the plane
+// axis crossed with the twist axis), in radians — for the same rod, the limit on
+// it pitching up and down. With SwingTypePyramid the two angles bound an ellipse;
+// with SwingTypeCone set them equal for a circular cone.
+func (s *SwingTwistConstraintSettings) SetPlaneHalfConeAngle(radians float32) {
+	s.ptr.planeHalfConeAngle = C.float(radians)
+}
+
+// SetTwistMinAngle sets the lower twist limit in radians, measured around the
+// twist axis from the zero position.
+func (s *SwingTwistConstraintSettings) SetTwistMinAngle(radians float32) {
+	s.ptr.twistMinAngle = C.float(radians)
+}
+
+// SetTwistMaxAngle sets the upper twist limit in radians.
+func (s *SwingTwistConstraintSettings) SetTwistMaxAngle(radians float32) {
+	s.ptr.twistMaxAngle = C.float(radians)
+}
+
 // Create builds the swing-twist constraint between two bodies.
 func (s *SwingTwistConstraintSettings) Create(b1, b2 *Body) *Constraint {
 	return &Constraint{ptr: (*C.JPH_Constraint)(unsafe.Pointer(C.JPH_SwingTwistConstraint_Create(s.ptr, b1.ptr, b2.ptr)))}

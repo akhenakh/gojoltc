@@ -15,10 +15,12 @@ usability pass makes it actually usable in games:
 
 - **Constraints** can be attached to a world (`AddConstraint`/`RemoveConstraint`).
 - **Joints you can aim**: hinge settings carry explicit points, hinge/normal axes
-  and initial limits, and a **gear constraint** couples two hinges — a rocker-bogie
-  differential pivot. A body can also take a real mass while Jolt still derives the
-  inertia from its shape, and report that mass and inertia back
-  (`Body.MassProperties`, `Body.InverseMass`).
+  and initial limits, swing-twist settings configure a **ball joint** (cone angles
+  and twist range) for rod ends, distance and point settings take explicit anchors,
+  and a **gear constraint** couples two hinges — a rocker-bogie differential pivot.
+  A body can also take a real mass while Jolt still derives the inertia from its
+  shape, and report that mass and inertia back (`Body.MassProperties`,
+  `Body.InverseMass`).
 - **Wheeled vehicles** drive: chassis + `NewWheelSettingsWV` wheels + a controller
   (with at least one differential), added as both a constraint and a step listener,
   with **tire friction curves** (`LinearCurve`) for surface-dependent slip.

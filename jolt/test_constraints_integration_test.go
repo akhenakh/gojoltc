@@ -491,3 +491,159 @@ func TestDifferentialBarCouplesRockers(t *testing.T) {
 		t.Errorf("the differential bar did not hold the rockers mirrored: |a1 + a2| = %v", sum)
 	}
 }
+
+// A configured swing-twist joint: the settings are plain struct fields with no
+// C setters, so this is the proof they reach the created constraint.
+func TestSwingTwistSettingsConfigureJoint(t *testing.T) {
+	f, body1, body2 := newConstraintFixture(t)
+	_ = f
+
+	settings := NewSwingTwistConstraintSettings()
+	defer settings.Destroy()
+	settings.SetSpace(ConstraintSpaceLocalToBodyCOM)
+	// The fixture's spheres sit at (0,0,0) and (2,0,0), so these two points (near
+	// each body's +x face) land on the same world point. Points are measured from
+	// each body's center of mass, not its origin.
+	settings.SetPosition1(RVec3{0.5, 0, 0})
+	settings.SetPosition2(RVec3{-1.5, 0, 0})
+	settings.SetTwistAxis1(Vec3{1, 0, 0})
+	settings.SetTwistAxis2(Vec3{1, 0, 0})
+	settings.SetPlaneAxis1(Vec3{0, 1, 0})
+	settings.SetPlaneAxis2(Vec3{0, 1, 0})
+	settings.SetSwingType(SwingTypeCone)
+	settings.SetNormalHalfConeAngle(0.8)
+	settings.SetPlaneHalfConeAngle(0.8)
+	settings.SetTwistMinAngle(-1.5)
+	settings.SetTwistMaxAngle(1.5)
+
+	c := settings.Create(body1, body2)
+	defer c.Destroy()
+
+	if c.SubType() != ConstraintSubTypeSwingTwist {
+		t.Fatalf("subtype = %d, want swing twist", c.SubType())
+	}
+	if a := c.SwingTwistNormalHalfConeAngle(); math.Abs(float64(a)-0.8) > 1e-5 {
+		t.Errorf("half cone angle = %v, want 0.8 (the setter did not reach the constraint)", a)
+	}
+}
+
+// The rover's rod end: a ball joint that has to articulate, not jam (two hinges
+// per end over-constrain the linkage). Each case pins down one setting
+// behaviourally, which a round-trip cannot: the rod hangs from a pivot at its own
+// tip, so a wide cone lets it drop 0.5*sin(cone) while a narrow one holds it
+// level.
+func TestSwingTwistRodEndArticulates(t *testing.T) {
+	type motion struct {
+		drop, angle, twist, yaw float64
+		maxTwist, maxYaw        float64
+	}
+
+	// rig hangs a horizontal rod (center at world (0.6,5,0)) from a pivot at its
+	// near tip, world (0.1,5,0), and reports how it moved.
+	rig := func(t *testing.T, swingType SwingType, normalCone, planeCone, twistLimit float32, spin Vec3) motion {
+		t.Helper()
+		f := newPhysicsFixture(t)
+		bi := f.system.BodyInterface()
+
+		// The anchor sits above the pivot so the rod swings clear of it: a pivot
+		// inside the anchor's box blocks the swing at whatever angle the contact
+		// allows.
+		anchorShape := NewBoxShape(Vec3{0.1, 0.1, 0.1}, DefaultConvexRadius)
+		defer anchorShape.Destroy()
+		as := NewBodyCreationSettings(anchorShape, RVec3{0.1, 5.6, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+		anchorID := bi.CreateAndAddBody(as, ActivationDontActivate)
+		as.Destroy()
+
+		rodShape := NewBoxShape(Vec3{0.5, 0.04, 0.04}, DefaultConvexRadius)
+		defer rodShape.Destroy()
+		rs := NewBodyCreationSettings(rodShape, RVec3{0.6, 5, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		rs.SetAllowSleeping(false)
+		rs.SetAngularVelocity(spin)
+		rodID := bi.CreateAndAddBody(rs, ActivationActivate)
+		rs.Destroy()
+		t.Cleanup(func() {
+			bi.RemoveAndDestroyBody(rodID)
+			bi.RemoveAndDestroyBody(anchorID)
+		})
+
+		s := NewSwingTwistConstraintSettings()
+		defer s.Destroy()
+		s.SetSpace(ConstraintSpaceLocalToBodyCOM)
+		s.SetPosition1(RVec3{0, -0.6, 0}) // the anchor's pivot, world (0.1, 5, 0)
+		s.SetPosition2(RVec3{-0.5, 0, 0}) // the rod's near tip, the same point
+		s.SetTwistAxis1(Vec3{1, 0, 0})    // twist about the rod's length
+		s.SetTwistAxis2(Vec3{1, 0, 0})
+		s.SetPlaneAxis1(Vec3{0, 1, 0})
+		s.SetPlaneAxis2(Vec3{0, 1, 0})
+		s.SetSwingType(swingType)
+		s.SetNormalHalfConeAngle(normalCone)
+		s.SetPlaneHalfConeAngle(planeCone)
+		s.SetTwistMinAngle(-twistLimit)
+		s.SetTwistMaxAngle(twistLimit)
+
+		c := s.Create(f.system.BodyPtr(anchorID), f.system.BodyPtr(rodID))
+		addConstraint(t, f, c)
+
+		// A joint with no motor and no friction swings between its limits, so track
+		// the peaks rather than one instant.
+		var maxTwist, maxYaw float64
+		f.system.OptimizeBroadPhase()
+		for range 150 {
+			f.system.Update(1.0/60.0, 1, f.jobSystem)
+			q := bi.Rotation(rodID)
+			maxTwist = math.Max(maxTwist, math.Abs(2*math.Atan2(float64(q.X), float64(q.W))))
+			maxYaw = math.Max(maxYaw, math.Abs(2*math.Atan2(float64(q.Y), float64(q.W))))
+		}
+
+		p, q := bi.Position(rodID), bi.Rotation(rodID)
+		if math.IsNaN(float64(p.Y)) {
+			t.Fatal("the joint diverged")
+		}
+		// The pivot must hold: a wrongly anchored joint yanks the bodies.
+		px, py, pz := worldAnchor(t, bi, rodID, Vec3{-0.5, 0, 0})
+		if d := math.Sqrt((px-0.1)*(px-0.1) + (py-5)*(py-5) + pz*pz); d > 0.03 {
+			t.Errorf("the joint's pivot moved %v m from (0.1,5,0)", d)
+		}
+		return motion{
+			drop:     5 - float64(p.Y),
+			angle:    2 * math.Atan2(math.Hypot(float64(q.Y), float64(q.Z)), float64(q.W)),
+			twist:    2 * math.Atan2(float64(q.X), float64(q.W)),
+			yaw:      2 * math.Atan2(float64(q.Y), float64(q.W)),
+			maxTwist: maxTwist,
+			maxYaw:   maxYaw,
+		}
+	}
+
+	// The plane cone bounds the pitch: wide, the rod drops 0.5*sin(0.8) = 0.359 m;
+	// narrow, it hangs level even with a wide normal cone — so the two angles are
+	// not interchangeable.
+	wide := rig(t, SwingTypeCone, 0.05, 0.8, 1.5, Vec3{})
+	if wide.drop < 0.28 || wide.drop > 0.45 {
+		t.Errorf("wide plane cone: center dropped %v m, want ~0.36 (swings, then stops at the cone)", wide.drop)
+	}
+	if math.Abs(wide.angle-0.8) > 0.06 {
+		t.Errorf("wide plane cone: rod rotated %v rad, want ~0.8", wide.angle)
+	}
+	if locked := rig(t, SwingTypeCone, 0.8, 0.05, 1.5, Vec3{}); locked.drop > 0.08 {
+		t.Errorf("narrow plane cone: center dropped %v m, want ~0.02 — the plane angle did not bound the swing", locked.drop)
+	}
+
+	// The normal cone bounds the yaw: a spin about world Y turns the rod until that
+	// angle stops it. The plane cone is nearly locked, so this measures the yaw.
+	turned := rig(t, SwingTypePyramid, 0.3, 0.02, 1.5, Vec3{0, 6, 0})
+	if math.Abs(turned.maxYaw-0.3) > 0.06 {
+		t.Errorf("normal cone 0.3: rod yawed up to %v rad, want ~0.3", turned.maxYaw)
+	}
+	if held := rig(t, SwingTypePyramid, 0.05, 0.02, 1.5, Vec3{0, 6, 0}); held.maxYaw > 0.1 {
+		t.Errorf("normal cone 0.05: rod yawed up to %v rad — the normal angle did not bound it", held.maxYaw)
+	}
+
+	// The twist range: with the swing nearly locked, a spin about the rod's own
+	// axis stops at the 0.2 limit. The spin is modest on purpose — a limit is
+	// enforced per step, so a fast joint overshoots it by up to one step's
+	// rotation (6 rad/s at 60 Hz would pass it by 0.1 rad before the impulse lands).
+	spun := rig(t, SwingTypeCone, 0.02, 0.02, 0.2, Vec3{2, 0, 0})
+	if math.Abs(spun.maxTwist-0.2) > 0.05 {
+		t.Errorf("twist peaked at %v rad, want it stopped at the 0.2 limit", spun.maxTwist)
+	}
+}
