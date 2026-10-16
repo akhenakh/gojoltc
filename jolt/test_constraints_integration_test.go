@@ -647,3 +647,107 @@ func TestSwingTwistRodEndArticulates(t *testing.T) {
 		t.Errorf("twist peaked at %v rad, want it stopped at the 0.2 limit", spun.maxTwist)
 	}
 }
+
+// The six-DOF route to a rod end: three free rotations, three fixed
+// translations, anchored at an offset point. Two things are worth pinning here —
+// Jolt's defaults are free on *every* axis, so the translations have to be fixed
+// explicitly or the joint slides, and the anchor is only read correctly once the
+// space is body-local.
+func TestSixDOFBallJointHoldsAndSwings(t *testing.T) {
+	type motion struct {
+		drop, twist, yaw float64
+	}
+
+	// rig hangs a horizontal rod (center at world (0.6,5,0)) from a pivot at its
+	// near tip, world (0.1,5,0), with all rotations free and the given rotation
+	// limit applied about world Z when limit > 0 (the direction gravity swings it).
+	rig := func(t *testing.T, limit float32, spin Vec3) motion {
+		t.Helper()
+		f := newPhysicsFixture(t)
+		bi := f.system.BodyInterface()
+
+		// The anchor sits above the pivot so the rod swings clear of it.
+		anchorShape := NewBoxShape(Vec3{0.1, 0.1, 0.1}, DefaultConvexRadius)
+		defer anchorShape.Destroy()
+		as := NewBodyCreationSettings(anchorShape, RVec3{0.1, 5.6, 0}, QuatIdentity(), MotionTypeStatic, layerNonMoving)
+		anchorID := bi.CreateAndAddBody(as, ActivationDontActivate)
+		as.Destroy()
+
+		rodShape := NewBoxShape(Vec3{0.5, 0.04, 0.04}, DefaultConvexRadius)
+		defer rodShape.Destroy()
+		rs := NewBodyCreationSettings(rodShape, RVec3{0.6, 5, 0}, QuatIdentity(), MotionTypeDynamic, layerMoving)
+		rs.SetAllowSleeping(false)
+		rs.SetAngularVelocity(spin)
+		rodID := bi.CreateAndAddBody(rs, ActivationActivate)
+		rs.Destroy()
+		t.Cleanup(func() {
+			bi.RemoveAndDestroyBody(rodID)
+			bi.RemoveAndDestroyBody(anchorID)
+		})
+
+		s := NewSixDOFConstraintSettings()
+		defer s.Destroy()
+		s.SetSpace(ConstraintSpaceLocalToBodyCOM)
+		s.SetPosition1(RVec3{0, -0.6, 0}) // the anchor's pivot, world (0.1, 5, 0)
+		s.SetPosition2(RVec3{-0.5, 0, 0}) // the rod's near tip, the same point
+		// Everything is free by default, so a ball joint is made by fixing the
+		// three translations.
+		for _, axis := range []SixDOFConstraintAxis{
+			SixDOFConstraintAxisTranslationX,
+			SixDOFConstraintAxisTranslationY,
+			SixDOFConstraintAxisTranslationZ,
+		} {
+			s.MakeFixedAxis(axis)
+		}
+		if limit > 0 {
+			s.SetLimitedAxis(SixDOFConstraintAxisRotationZ, -limit, limit)
+		}
+		c := s.Create(f.system.BodyPtr(anchorID), f.system.BodyPtr(rodID))
+		addConstraint(t, f, c)
+
+		// A free joint swings through its arc, and with a spin it keeps oscillating,
+		// so track the peaks rather than one instant.
+		var maxTwist, maxYaw, maxDrop float64
+		f.system.OptimizeBroadPhase()
+		for range 150 {
+			f.system.Update(1.0/60.0, 1, f.jobSystem)
+			q := bi.Rotation(rodID)
+			maxTwist = math.Max(maxTwist, math.Abs(2*math.Atan2(float64(q.X), float64(q.W))))
+			maxYaw = math.Max(maxYaw, math.Abs(2*math.Atan2(float64(q.Y), float64(q.W))))
+			maxDrop = math.Max(maxDrop, 5-float64(bi.Position(rodID).Y))
+		}
+
+		p := bi.Position(rodID)
+		if math.IsNaN(float64(p.Y)) {
+			t.Fatal("the joint diverged")
+		}
+		// The translations are held: the pivot has not moved, which also fails
+		// loudly if the positions were read in world space instead of body-local.
+		px, py, pz := worldAnchor(t, bi, rodID, Vec3{-0.5, 0, 0})
+		if d := math.Sqrt((px-0.1)*(px-0.1) + (py-5)*(py-5) + pz*pz); d > 0.03 {
+			t.Errorf("the joint's pivot moved %v m from (0.1,5,0)", d)
+		}
+		return motion{drop: maxDrop, twist: maxTwist, yaw: maxYaw}
+	}
+
+	// A free ball joint: the rod hangs the whole way down (its center falls its
+	// full 0.5 m offset), and the other two rotations are free too, so a spin about
+	// both the rod's axis and the vertical keeps turning.
+	free := rig(t, 0, Vec3{2, 2, 0})
+	if free.drop < 0.45 || free.drop > 0.55 {
+		t.Errorf("free joint: center dropped %v m, want ~0.5 (it hangs straight down)", free.drop)
+	}
+	if free.twist < 0.5 {
+		t.Errorf("free joint: the rod barely twisted (%v rad); RotationX is not free", free.twist)
+	}
+	if free.yaw < 0.5 {
+		t.Errorf("free joint: the rod barely yawed (%v rad); RotationY is not free", free.yaw)
+	}
+
+	// A limited rod end: the same rig with RotationZ bounded stops at the limit,
+	// dropping 0.5*sin(0.4) = 0.195 m — the swing stop a real rod end needs.
+	limited := rig(t, 0.4, Vec3{})
+	if limited.drop < 0.14 || limited.drop > 0.26 {
+		t.Errorf("limited joint: center dropped %v m, want ~0.195 (stopped at the 0.4 rad swing limit)", limited.drop)
+	}
+}

@@ -559,7 +559,21 @@ func (c *Constraint) SwingTwistNormalHalfConeAngle() float32 {
 
 // --- Six DOF ----------------------------------------------------------------
 
-// SixDOFConstraintSettings holds settings for a six DOF constraint.
+// SixDOFConstraintSettings holds settings for a six DOF constraint: each of the
+// three translations and three rotations is free, fixed or limited.
+//
+// A passive ball joint — three free rotations, three fixed translations — needs
+// only the anchors and three MakeFixedAxis calls, because Jolt's defaults are
+// **free on every axis** (limitMin/limitMax are -/+FLT_MAX):
+//
+//	s.SetSpace(ConstraintSpaceLocalToBodyCOM)
+//	s.SetPosition1(p1); s.SetPosition2(p2)
+//	s.MakeFixedAxis(SixDOFConstraintAxisTranslationX) // ...Y, ...Z
+//
+// Swing or twist limits then come from SetLimitedAxis, and the reference-frame
+// axis fields (axisX1/axisY1/...) are deliberately not wrapped: a fixed
+// translation is locked whichever axis it is expressed along, and a free rotation
+// ignores its axis, so for a ball joint they cannot matter.
 type SixDOFConstraintSettings struct {
 	ptr *C.JPH_SixDOFConstraintSettings
 }
@@ -569,6 +583,25 @@ func NewSixDOFConstraintSettings() *SixDOFConstraintSettings {
 	p := (*C.JPH_SixDOFConstraintSettings)(C.malloc(C.size_t(unsafe.Sizeof(C.JPH_SixDOFConstraintSettings{}))))
 	C.JPH_SixDOFConstraintSettings_Init(p)
 	return &SixDOFConstraintSettings{ptr: p}
+}
+
+// SetSpace sets the space the positions and axes are expressed in. The default is
+// ConstraintSpaceWorldSpace; ConstraintSpaceLocalToBodyCOM makes them body-local,
+// measured from each body's **center of mass** (not its origin). The positions are
+// read in this space, so set it before them.
+func (s *SixDOFConstraintSettings) SetSpace(space ConstraintSpace) {
+	s.ptr.space = C.JPH_ConstraintSpace(space)
+}
+
+// SetPosition1 sets the pivot on body 1, in the space selected by SetSpace. Both
+// positions must land on the same world point when the constraint is created.
+func (s *SixDOFConstraintSettings) SetPosition1(p vecmath.RVec3) {
+	s.ptr.position1 = rvec3ToC(p)
+}
+
+// SetPosition2 sets the pivot on body 2.
+func (s *SixDOFConstraintSettings) SetPosition2(p vecmath.RVec3) {
+	s.ptr.position2 = rvec3ToC(p)
 }
 
 // MakeFreeAxis makes an axis free.

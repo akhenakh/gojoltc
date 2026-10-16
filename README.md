@@ -16,7 +16,9 @@ usability pass makes it actually usable in games:
 - **Constraints** can be attached to a world (`AddConstraint`/`RemoveConstraint`).
 - **Joints you can aim**: hinge settings carry explicit points, hinge/normal axes
   and initial limits, swing-twist settings configure a **ball joint** (cone angles
-  and twist range) for rod ends, distance and point settings take explicit anchors,
+  and twist range) for rod ends, six-DOF settings anchor a joint at an explicit
+  point (a passive ball joint is three `MakeFixedAxis` calls), distance and point
+  settings take explicit anchors,
   and a **gear constraint** couples two hinges — a rocker-bogie differential pivot.
   A body can also take a real mass while Jolt still derives the inertia from its
   shape, and report that mass and inertia back (`Body.MassProperties`,
