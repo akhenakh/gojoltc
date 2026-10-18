@@ -97,7 +97,7 @@ cmake -S "$joltc_src" -B "$build_dir" \
   -DTARGET_PERFORMANCE_TEST=OFF \
   -DTARGET_SAMPLES=OFF \
   -DTARGET_VIEWER=OFF \
-  "${extra[@]}"
+  ${extra[@]+"${extra[@]}"}
 
 echo ">> building joltc ($JOLTC_JOBS jobs)"
 cmake --build "$build_dir" --config "$JOLTC_BUILD_TYPE" -j "$JOLTC_JOBS"
